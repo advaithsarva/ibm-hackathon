@@ -1,0 +1,9 @@
+name: wildfire
+hazard:
+  formula: "min(1.0, fwi / 50.0)"              # §3.1 fire weather index
+  inputs: [fwi]
+  tau_survivability_hours: 2                   # §6.1 smoke inhalation
+uncertainty:
+  tau_data_hours: 6.0
+models:
+  primary: physics_baseline

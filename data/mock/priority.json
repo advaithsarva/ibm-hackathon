@@ -1,0 +1,43 @@
+{
+  "ranked": [
+    {
+      "rank": 1,
+      "cell_id": "12.9716_77.5946",
+      "pi": 4.71,
+      "n_est": 6,
+      "p_alive": 0.94,
+      "survivability": 0.87,
+      "eta_min": 18,
+      "team": "NDRF-3",
+      "capability_match": 1.0,
+      "route": [[12.9716, 77.5946], [12.9702, 77.5988], [12.9688, 77.6021]]
+    },
+    {
+      "rank": 2,
+      "cell_id": "12.9702_77.5988",
+      "pi": 2.88,
+      "n_est": 4,
+      "p_alive": 0.79,
+      "survivability": 0.91,
+      "eta_min": 12,
+      "team": "NDRF-1",
+      "capability_match": 1.0,
+      "route": [[12.9702, 77.5988], [12.9688, 77.6021]]
+    },
+    {
+      "rank": 3,
+      "cell_id": "12.9750_77.5890",
+      "pi": 0.44,
+      "n_est": 2,
+      "p_alive": 0.31,
+      "survivability": 0.71,
+      "eta_min": 90,
+      "team": "SDRF-2",
+      "capability_match": 0.6,
+      "route": [[12.9750, 77.5890], [12.9716, 77.5946]]
+    }
+  ],
+  "unassigned": ["12.9688_77.6021"],
+  "budget_used_team_hours": 11.5,
+  "budget_total_team_hours": 14.0
+}

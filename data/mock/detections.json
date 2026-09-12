@@ -1,0 +1,46 @@
+[
+  {
+    "cell_id": "12.9716_77.5946",
+    "source": "drone_feed_03",
+    "timestamp": "2026-09-12T08:41:12Z",
+    "detections": [
+      {"type": "rgb_person", "conf": 0.66, "bbox": [120, 88, 164, 190]},
+      {"type": "thermal_hotspot", "conf": 0.71, "temp_c": 34.2},
+      {"type": "rppg_pulse", "conf": 0.88, "bpm": 92, "snr_db": 6.1},
+      {"type": "acoustic_distress", "conf": 0.54, "class": "Shout"}
+    ],
+    "p_alive": 0.94,
+    "n_est": 6
+  },
+  {
+    "cell_id": "12.9750_77.5890",
+    "source": "drone_feed_01",
+    "timestamp": "2026-09-12T08:39:47Z",
+    "detections": [
+      {"type": "thermal_hotspot", "conf": 0.63, "temp_c": 33.1}
+    ],
+    "p_alive": 0.31,
+    "n_est": 2
+  },
+  {
+    "cell_id": "12.9702_77.5988",
+    "source": "drone_feed_01",
+    "timestamp": "2026-09-12T08:42:03Z",
+    "detections": [
+      {"type": "rgb_person", "conf": 0.58, "bbox": [201, 140, 238, 224]},
+      {"type": "acoustic_distress", "conf": 0.61, "class": "Scream"}
+    ],
+    "p_alive": 0.79,
+    "n_est": 4
+  },
+  {
+    "cell_id": "12.9688_77.6021",
+    "source": "ground_team_02",
+    "timestamp": "2026-09-12T08:44:30Z",
+    "detections": [
+      {"type": "phone_ping", "conf": 0.40, "device_count": 3}
+    ],
+    "p_alive": 0.22,
+    "n_est": 3
+  }
+]

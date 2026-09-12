@@ -1,0 +1,13 @@
+name: earthquake
+hazard:
+  formula: "min(1.0, pga_ms2 / 4.0)"          # §3.1
+  inputs: [pga_ms2]
+  tau_survivability_hours: 40                  # §6.1 crush syndrome, dehydration
+physics:                                       # §3.2 GMPE: ln(PGA) = c1 + c2*M - c3*ln(sqrt(R^2 + h^2))
+  model: gmpe
+  fields: [magnitude_mw, focal_depth_km, pga_g, vs30_shear_velocity]
+uncertainty:
+  tau_data_hours: 1.0
+models:                                        # §3.3
+  primary: gnn_or_catboost
+  damage: xbd_baseline

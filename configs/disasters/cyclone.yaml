@@ -1,0 +1,15 @@
+name: cyclone
+hazard:
+  formula: "min(1.0, wind_kmh / 250.0)"        # §3.1 max sustained wind
+  inputs: [wind_kmh]
+  tau_survivability_hours: 12                  # §6.1 exposure
+physics:                                       # §3.2 Holland: P(r) = Pc + (Pn-Pc)*exp(-(Rm/r)^B)
+  model: holland
+  fields: [central_pressure_hpa, max_wind_knots, rmw_km, sst_celsius]
+  notes: "sst_celsius > 26.5 fuels intensification"
+uncertainty:
+  tau_data_hours: 6.0
+models:
+  primary: holland_plus_gbdt
+grid:
+  cell_size_m: 1000                            # §1.2 regional

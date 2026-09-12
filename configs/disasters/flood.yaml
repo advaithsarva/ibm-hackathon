@@ -1,0 +1,13 @@
+name: flood
+hazard:
+  formula: "min(1.0, 0.5*(r24_mm/300.0) + 0.5*(q_cumecs/q_max))"   # §3.1
+  inputs: [r24_mm, q_cumecs, q_max]
+  tau_survivability_hours: 8                   # §6.1 hypothermia, exhaustion
+physics:                                       # §3.2 Manning: Q = (1/n)*A*Rh^(2/3)*S^(1/2)
+  model: manning
+  fields: [precip_24h_mm, precip_5d_cum, river_gauge_m, sar_vv_db, elevation_z]
+  notes: "precip_24h_mm > 64.5 = heavy rain warning; sar_vv_db < -18 = water"
+uncertainty:
+  tau_data_hours: 6.0
+models:
+  primary: xgboost_plus_segformer_b0

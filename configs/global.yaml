@@ -1,0 +1,56 @@
+# Shared engine config. Per-disaster overrides live in configs/disasters/*.yaml.
+# Every value here is transcribed from DISASTER_PIPELINE_SPEC.md — section noted per block.
+
+grid:                            # §1.2
+  crs_storage: EPSG:4326
+  crs_distance: EPSG:3857        # or local UTM
+  cell_size_m: 100               # 1000 for drought/cyclone regional
+  cell_id_format: "{lat:.4f}_{lon:.4f}"
+  resample:
+    continuous: bilinear
+    categorical: nearest
+
+thresholds:                      # §3.1 — shared by all seven hazards
+  low: 0.40
+  high: 0.75
+
+zones:                           # §4.2
+  red:   "X >= 0.75 or (X >= 0.40 and U >= 0.50)"
+  green: "X < 0.40 and U < 0.35 and G >= 0.60 and reachable"
+  blue:  otherwise
+  hysteresis:
+    margin: 0.05                 # must cross threshold by this much
+    hold_cycles: 2               # and hold for this many cycles
+
+uncertainty:                     # §4.1 — U = 1 - (1-u_model)(1-u_stale)(1-u_cover)
+  sigma_max: 0.25
+  tau_data_hours:
+    seismic: 1.0
+    rainfall: 6.0
+    sar_revisit: 12.0
+
+green_suitability:               # §4.3 — weights w1..w5
+  w_forecast_hazard: 0.35        # 1 - max over forecast horizon of X
+  w_elevation: 0.20
+  w_shelter_capacity: 0.20
+  w_access: 0.15
+  w_travel_distance: 0.10        # subtracted
+
+fusion:                          # §5.3 — Bayesian log-odds likelihood ratios
+  likelihood_ratios:
+    radar_vital: 25
+    acoustic_distress: 12
+    rppg_pulse: 8
+    rgb_person: 5
+    thermal_hotspot: 3
+    phone_ping: 2
+
+routing:                         # §7.1 — c(e) = (L/v)(1 + aX + bU)[1 + 0.15(f/cap)^4]
+  alpha_hazard: 3.0
+  beta_uncertainty: 1.0
+  bpr_coefficient: 0.15
+  bpr_exponent: 4
+  impassable_if_hazard_gte: 0.75
+
+dispatch:                        # §6.3 — greedy on Pi/c, (1 - 1/e) approximation
+  strategy: greedy

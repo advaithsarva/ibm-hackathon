@@ -1,0 +1,13 @@
+name: landslide
+hazard:
+  formula: "0.6*(r3d_mm/200.0) + 0.4*(slope_deg/60.0)"   # §3.1
+  inputs: [r3d_mm, slope_deg]
+  tau_survivability_hours: 24                  # §6.1 burial asphyxiation
+physics:                                       # §3.2 infinite slope factor of safety; FS <= 1.0 = imminent failure
+  model: factor_of_safety
+  fields: [slope_deg, soil_cohesion_kpa, precip_3d_cum]
+  notes: "slope_deg > 30 elevated risk"
+uncertainty:
+  tau_data_hours: 6.0
+models:
+  primary: fs_plus_xgboost

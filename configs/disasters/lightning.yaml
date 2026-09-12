@@ -1,0 +1,13 @@
+name: lightning
+hazard:
+  formula: "min(1.0, cape_j_kg / 4500.0)"      # §3.1
+  inputs: [cape_j_kg]
+  # tau_survivability_hours: not specified in spec §6.1 — do not invent one
+physics:                                       # §3.2 flash rate F_L = a * CAPE^(1/2) * w_max^2
+  model: flash_rate
+  fields: [cape_j_kg, updraft_velocity_ms, stroke_current_ka]
+  notes: "cape_j_kg > 2500 = severe convection; 1-3 hour nowcasts"
+uncertainty:
+  tau_data_hours: 1.0
+models:
+  primary: cape_threshold_plus_random_forest

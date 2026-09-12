@@ -1,0 +1,29 @@
+{
+  "flows": [
+    {"from_cell": "12.9716_77.5946", "to_shelter": "shelter_07",
+     "people": 820, "path": [[12.9716, 77.5946], [12.9660, 77.5990], [12.9601, 77.6033]],
+     "travel_min": 26},
+    {"from_cell": "12.9716_77.5946", "to_shelter": "shelter_11",
+     "people": 630, "path": [[12.9716, 77.5946], [12.9630, 77.6080], [12.9555, 77.6150]],
+     "travel_min": 34},
+    {"from_cell": "12.9750_77.5890", "to_shelter": "shelter_07",
+     "people": 380, "path": [[12.9750, 77.5890], [12.9670, 77.5960], [12.9601, 77.6033]],
+     "travel_min": 31},
+    {"from_cell": "12.9750_77.5890", "to_shelter": "shelter_11",
+     "people": 1930, "path": [[12.9750, 77.5890], [12.9640, 77.6210], [12.9555, 77.6150]],
+     "travel_min": 44},
+    {"from_cell": "12.9702_77.5988", "to_shelter": "shelter_07",
+     "people": 980, "path": [[12.9702, 77.5988], [12.9601, 77.6033]],
+     "travel_min": 19}
+  ],
+  "shelters": [
+    {"id": "shelter_07", "name": "Govt High School", "capacity": 2400,
+     "assigned": 2180, "utilization": 0.91, "location": [12.9601, 77.6033]},
+    {"id": "shelter_11", "name": "Community Hall", "capacity": 2560,
+     "assigned": 2560, "utilization": 1.0, "location": [12.9555, 77.6150]}
+  ],
+  "overflow": [
+    {"from_cell": "12.9801_77.6102", "people": 240,
+     "reason": "both shelters at capacity; nearest alternative outside grid"}
+  ]
+}
