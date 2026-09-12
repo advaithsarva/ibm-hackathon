@@ -1,0 +1,24 @@
+# Rainfall-only flood hazard, for when there is no river gauge export.
+#
+# configs/disasters/flood.yaml needs discharge, and deriving discharge from rainfall
+# through an invented rating coefficient against an invented bankfull q_max makes half
+# the score guesswork. This variant drops discharge and anchors X to IMD's own published
+# 24 h rainfall categories instead, so every number traces to a documented threshold:
+#
+#   64.5 mm   IMD "heavy rainfall"            -> X = 0.40, our medium tier
+#   115.6 mm  IMD "very heavy rainfall"       -> X = 0.72
+#   160.0 mm                                  -> X = 1.00, saturated
+#   204.5 mm  IMD "extremely heavy rainfall"  -> capped at 1.00
+#
+# Saturating at 160 rather than 204.5 is a deliberate choice: by the time a district has
+# taken 160 mm in a day it is already at the top of the response scale, and stretching
+# the range to 204.5 would leave genuinely severe days sitting in the medium tier.
+name: flood_rainfall
+hazard:
+  formula: "min(1.0, r24_mm / 160.0)"
+  inputs: [r24_mm]
+  tau_survivability_hours: 8
+uncertainty:
+  tau_data_hours: 6.0
+models:
+  primary: physics_baseline

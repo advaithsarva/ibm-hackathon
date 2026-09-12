@@ -40,3 +40,7 @@ dist/
 # os
 .DS_Store
 Thumbs.db
+
+# real data exports: large, and each laptop fetches its own
+data/raw/imd/
+data/raw/ibtracs/
