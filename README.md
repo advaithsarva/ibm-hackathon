@@ -319,7 +319,7 @@ Stated plainly, because a demo that overclaims loses the room in Q&A.
 | Priority, dispatch, routing, evacuation | **real** algorithms |
 | Ward terrain, elevation, population | **modelled** for Coimbatore, labelled in every record |
 | Per-ward detection records | **synthetic** pending live feeds; the fused `p_alive` is real |
-| YOLO and YAMNet weights | not trained; the wrappers raise rather than returning empty |
+| YOLO, YAMNet and flood-segmentation weights | **trained**, loaded through the sequential GPU guard |
 | `GET /api/radar/heartbeat` | **simulated.** FINDER-class radar is hardware we do not have |
 
 `configs/disasters/flood.yaml` needs river discharge. With no CWC gauge export, both the
@@ -465,6 +465,6 @@ equal thirds.
 - [x] FastAPI backend, eight endpoints, live simulation
 - [x] Sentinel Grid dashboard wired to every endpoint
 - [x] 314 verification checks
+- [x] Detection models trained: aerial RGB, thermal, acoustic, flood segmentation
 - [ ] Gradient-boosted model for extreme-monsoon prediction, the one task still open
-- [ ] YOLO and YAMNet weights
 - [ ] Real Bhuvan, Sentinel-1 and WorldPop exports replacing the modelled ward terrain
