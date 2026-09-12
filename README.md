@@ -164,8 +164,10 @@ python -m src.hazard.zones --config configs/disasters/earthquake.yaml \
 
 Nothing hardcodes a schema. Each disaster config carries a `dataset.columns` block of
 candidate column names, and the loader resolves the real header against them — exact
-match first, then substring, so `Magnitude (Mw)` and `ACTUAL (mm)` resolve without
-anyone editing code. `--inspect` prints the header, says which aliases matched, and names
+match first, then whole-token, so `Magnitude (Mw)` and `Focal Depth (km)` resolve without
+anyone editing code. Matching is never on bare substrings: against these files the alias
+`y` matches `YEAR`, `x` matches `Proximity_to_Water` and `lon` matches `Cyclone`, each of
+which would silently bind unrelated numbers to a coordinate. `--inspect` prints the header, says which aliases matched, and names
 the ones that did not, so adapting to a new file is a YAML edit.
 
 Two mappings are deliberate rather than obvious:
