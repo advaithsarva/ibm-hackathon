@@ -263,6 +263,7 @@ def _cli():
         out_path = pathlib.Path(args.out)
         if not out_path.is_absolute():
             out_path = REPO_ROOT / out_path
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text + "\n")
         counts = {}
         for c in result["grid_cells"]:

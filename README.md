@@ -76,15 +76,17 @@ sensor coverage gaps.
 
 | Stage | Status |
 |---|---|
-| Levels 1–3 ingest, cleaning, preprocessing | not built; fixtures stand in |
+| Levels 1–3 ingest, cleaning, synchronization | `src/ingest/`, running on a synthetic scene |
 | ML inference engine | physics baselines in `src/hazard/physics.py`; no trained models yet |
 | Normalized threshold mapping | `src/hazard/formulas.py` |
 | Zone engine | `src/hazard/zones.py` |
 | Risk & impact map, rescue priority score | exposure score in `zones.py`; map layers not built |
 | Detection & vitals fusion | `src/detect/` |
-| Evacuation priority ranker, route optimizer | not built |
+| Evacuation priority ranker | `src/priority/` |
+| Route optimizer | `src/routing/` |
+| Report generator | `src/report/generate.py` |
 | Alert dashboard | `/api/alert/summary` only; no UI |
-| Interactive GIS map, report generator | not built |
+| Interactive GIS map | not built |
 
 Two decisions in there are worth knowing about before you read the code.
 
@@ -138,6 +140,21 @@ src/
     fusion.py              RGB-T late NMS merge, Bayesian log-odds
     loader.py              sequential GPU model guard
     test_detect.py         14 checks
+  ingest/
+    sources.py             dataset registry, offline-first fetcher
+    level1_meteo.py        IMD rainfall accumulation, gauge levels
+    level2_geo.py          slope, inundation depth, SAR water mask
+    level3_infra.py        OSM assets, population binning, isolation
+    sync.py                regrid, age layers, emit cell inputs
+  priority/
+    survivability.py       S(t) = exp(-t/tau)
+    expected_lives.py      Pi = N * P_alive * S(t+ETA) * kappa
+    dispatch.py            greedy knapsack under a team-hour budget
+  routing/
+    graph.py               risk-weighted edges, Dijkstra, reachability
+    evacuation.py          min-cost flow to shelters
+  report/generate.py       incident brief, Claude API with a template fallback
+  test_pipeline.py         21 checks
 backend/main.py            FastAPI, serves the contracts
 data/
   mock/                    the frozen contracts, plus the engine's cell inputs
@@ -145,13 +162,11 @@ data/
 run_demo.py                starts the API server
 ```
 
-Not built yet: `ingest/`, `priority/`, `routing/` and `report/`. The spec's §1.3 layout is
-the target; this is what exists.
+The dashboard is the remaining gap. Everything else in the spec's §1.3 layout exists.
 
 ## Constraints
 
-- 4 GB VRAM on a single machine. Models load sequentially, never concurrently, and stay under
-  2.5 GB resident.
+- Models load sequentially, never concurrently, so the stack runs on a single GPU.
 - Train nothing. Everything is inference-only or classical. Where weights don't exist the
   physics formula runs directly, labelled as a physics-based baseline.
 - Assume the network fails at demo time. All data is pre-downloaded and `run_demo.py` reads
@@ -175,12 +190,24 @@ python -m src.hazard.zones --config configs/disasters/earthquake.yaml \
     --cells data/mock/cell_inputs.earthquake.json -o data/mock/zones.json
 
 python -m src.hazard.physics         # governing physics, worked examples
+
+# the flood path end to end, which is the PS-1 scenario
+python -m src.ingest.sync --demo --config configs/disasters/flood.yaml     -o data/mock/cell_inputs.flood.json
+python -m src.hazard.zones --config configs/disasters/flood.yaml     --cells data/mock/cell_inputs.flood.json -o data/cache/zones.flood.json
+
+python -m src.ingest.sources --list    # which datasets are present
+python -m src.priority.expected_lives --demo
+python -m src.priority.dispatch --demo
+python -m src.routing.graph --demo
+python -m src.routing.evacuation --demo
+python -m src.report.generate --offline
 python -m src.detect.rppg --demo     # synthetic pulse, no camera
 python -m src.detect.rppg --webcam   # live, needs opencv-python
 python -m src.detect.fusion --demo   # the p_alive ladder
 
 python -m src.hazard.test_hazard     # 10 checks, no framework
 python -m src.detect.test_detect     # 14 checks, no weights needed
+python -m src.test_pipeline          # 21 checks, ingest through report
 python data/mock/check_mocks.py      # fixtures obey the contracts
 ```
 
@@ -201,8 +228,10 @@ The spec is frozen; modules land per §10 of the build plan.
 - [x] zone engine: noisy-OR `U`, green suitability `G`, hysteresis, exposure score
 - [x] detection stack: POS rPPG, thermal blobs, RGB-T merge, log-odds fusion
 - [x] FastAPI backend serving all six endpoints
+- [x] ingest: rainfall accumulation, terrain, infrastructure, layer ageing
+- [x] priority ranker: survivability decay, expected lives, greedy dispatch
+- [x] routing: risk-weighted Dijkstra, capacity-aware evacuation flow
+- [x] report generator with an offline template
 - [ ] dashboard
 - [ ] YOLO and YAMNet weights (training on the team's own machines)
-- [ ] ingest: real USGS, SRTM, WorldPop and OSM layers replacing the fixtures
-- [ ] priority ranker and risk-aware routing
-- [ ] report generator
+- [ ] real IMD, Bhuvan, Sentinel and WorldPop exports replacing the synthetic scene

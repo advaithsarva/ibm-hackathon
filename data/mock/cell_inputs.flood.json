@@ -1,0 +1,318 @@
+[
+  {
+    "cell_id": "12.9716_77.5946",
+    "centroid": [
+      12.9716,
+      77.5946
+    ],
+    "hazard_inputs": {
+      "r24_mm": 288.0,
+      "q_cumecs": 760.0,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.01911,
+      "data_age_hours": 3.0,
+      "area_sensed_fraction": 0.94
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.88,
+      "elevation_norm": 0.15,
+      "shelter_capacity": 200,
+      "pop_inflow": 2000,
+      "access": 0.9,
+      "travel_distance_norm": 0.138
+    },
+    "pop": 1450,
+    "assets": [
+      {
+        "type": "hospital",
+        "name": "City General",
+        "value": 1.0
+      }
+    ],
+    "reachable": true,
+    "components": {
+      "r24_mm": 288.0,
+      "river_gauge_m": 760.0,
+      "x_from_gauge": 0.902,
+      "x_from_rainfall": 0.864,
+      "evidence": "gauge"
+    }
+  },
+  {
+    "cell_id": "12.9750_77.5890",
+    "centroid": [
+      12.975,
+      77.589
+    ],
+    "hazard_inputs": {
+      "r24_mm": 301.0,
+      "q_cumecs": 780.0,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.016,
+      "data_age_hours": 3.0,
+      "area_sensed_fraction": 0.92
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.93,
+      "elevation_norm": 0.1,
+      "shelter_capacity": 100,
+      "pop_inflow": 2000,
+      "access": 0.9,
+      "travel_distance_norm": 0.179
+    },
+    "pop": 2310,
+    "assets": [
+      {
+        "type": "school",
+        "name": "Corporation School 4",
+        "value": 0.7
+      }
+    ],
+    "reachable": true,
+    "components": {
+      "r24_mm": 301.0,
+      "river_gauge_m": 780.0,
+      "x_from_gauge": 0.935,
+      "x_from_rainfall": 0.903,
+      "evidence": "gauge"
+    }
+  },
+  {
+    "cell_id": "12.9702_77.5988",
+    "centroid": [
+      12.9702,
+      77.5988
+    ],
+    "hazard_inputs": {
+      "r24_mm": 214.0,
+      "q_cumecs": 690.0,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.049,
+      "data_age_hours": 3.0,
+      "area_sensed_fraction": 0.83
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.7,
+      "elevation_norm": 0.22,
+      "shelter_capacity": 300,
+      "pop_inflow": 2000,
+      "access": 0.1,
+      "travel_distance_norm": 0.121
+    },
+    "pop": 980,
+    "assets": [
+      {
+        "type": "bridge",
+        "name": "Canal Rd Overpass",
+        "value": 0.9
+      }
+    ],
+    "reachable": false,
+    "components": {
+      "r24_mm": 214.0,
+      "river_gauge_m": 690.0,
+      "x_from_gauge": 0.74,
+      "x_from_rainfall": 0.642,
+      "evidence": "gauge"
+    }
+  },
+  {
+    "cell_id": "12.9688_77.6021",
+    "centroid": [
+      12.9688,
+      77.6021
+    ],
+    "hazard_inputs": {
+      "r24_mm": 186.0,
+      "q_cumecs": 640.0,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.05378,
+      "data_age_hours": 3.0,
+      "area_sensed_fraction": 0.94
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.58,
+      "elevation_norm": 0.31,
+      "shelter_capacity": 600,
+      "pop_inflow": 2000,
+      "access": 0.9,
+      "travel_distance_norm": 0.104
+    },
+    "pop": 1120,
+    "assets": [],
+    "reachable": true,
+    "components": {
+      "r24_mm": 186.0,
+      "river_gauge_m": 640.0,
+      "x_from_gauge": 0.666,
+      "x_from_rainfall": 0.558,
+      "evidence": "gauge"
+    }
+  },
+  {
+    "cell_id": "12.9801_77.6102",
+    "centroid": [
+      12.9801,
+      77.6102
+    ],
+    "hazard_inputs": {
+      "r24_mm": 142.0,
+      "q_cumecs": 340.8,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.0,
+      "data_age_hours": 11.2,
+      "area_sensed_fraction": 0.97
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.47,
+      "elevation_norm": 0.6,
+      "shelter_capacity": 1600,
+      "pop_inflow": 2000,
+      "access": 0.9,
+      "travel_distance_norm": 0.24
+    },
+    "pop": 1670,
+    "assets": [
+      {
+        "type": "clinic",
+        "name": "Ward 12 PHC",
+        "value": 0.6
+      }
+    ],
+    "reachable": true,
+    "components": {
+      "r24_mm": 142.0,
+      "river_gauge_m": null,
+      "x_from_gauge": null,
+      "x_from_rainfall": 0.426,
+      "evidence": "sar_only"
+    }
+  },
+  {
+    "cell_id": "12.9640_77.6210",
+    "centroid": [
+      12.964,
+      77.621
+    ],
+    "hazard_inputs": {
+      "r24_mm": 118.0,
+      "q_cumecs": 283.2,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.0,
+      "data_age_hours": 11.2,
+      "area_sensed_fraction": 0.95
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.41,
+      "elevation_norm": 0.46,
+      "shelter_capacity": 1000,
+      "pop_inflow": 2000,
+      "access": 0.9,
+      "travel_distance_norm": 0.047
+    },
+    "pop": 640,
+    "assets": [],
+    "reachable": true,
+    "components": {
+      "r24_mm": 118.0,
+      "river_gauge_m": null,
+      "x_from_gauge": null,
+      "x_from_rainfall": 0.354,
+      "evidence": "sar_only"
+    }
+  },
+  {
+    "cell_id": "12.9601_77.6033",
+    "centroid": [
+      12.9601,
+      77.6033
+    ],
+    "hazard_inputs": {
+      "r24_mm": 44.0,
+      "q_cumecs": 105.6,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.0,
+      "data_age_hours": 0.4167,
+      "area_sensed_fraction": 0.96
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.16,
+      "elevation_norm": 0.91,
+      "shelter_capacity": 2400,
+      "pop_inflow": 2000,
+      "access": 0.9,
+      "travel_distance_norm": 0.0
+    },
+    "pop": 410,
+    "assets": [
+      {
+        "type": "shelter",
+        "name": "Govt High School",
+        "value": 1.0
+      }
+    ],
+    "reachable": true,
+    "components": {
+      "r24_mm": 44.0,
+      "river_gauge_m": null,
+      "x_from_gauge": null,
+      "x_from_rainfall": 0.132,
+      "evidence": "sar_only"
+    }
+  },
+  {
+    "cell_id": "12.9555_77.6150",
+    "centroid": [
+      12.9555,
+      77.615
+    ],
+    "hazard_inputs": {
+      "r24_mm": 71.0,
+      "q_cumecs": 170.4,
+      "q_max": 900.0
+    },
+    "sensors": {
+      "sigma_ens": 0.0,
+      "data_age_hours": 0.4167,
+      "area_sensed_fraction": 0.92
+    },
+    "green_inputs": {
+      "forecast_max_x": 0.26,
+      "elevation_norm": 0.76,
+      "shelter_capacity": 1800,
+      "pop_inflow": 2000,
+      "access": 0.9,
+      "travel_distance_norm": 0.055
+    },
+    "pop": 520,
+    "assets": [
+      {
+        "type": "shelter",
+        "name": "Community Hall",
+        "value": 0.8
+      }
+    ],
+    "reachable": true,
+    "components": {
+      "r24_mm": 71.0,
+      "river_gauge_m": null,
+      "x_from_gauge": null,
+      "x_from_rainfall": 0.213,
+      "evidence": "sar_only"
+    }
+  }
+]
