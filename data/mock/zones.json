@@ -1,94 +1,250 @@
 {
   "disaster": "earthquake",
-  "generated_at": "2026-09-12T08:40:00Z",
+  "generated_at": "2026-09-12T13:38:36Z",
   "grid_cells": [
     {
       "cell_id": "12.9716_77.5946",
-      "centroid": [12.9716, 77.5946],
-      "X": 0.82, "U": 0.21, "G": 0.10,
-      "zone": "RED", "zone_reason": "X >= 0.75",
+      "centroid": [
+        12.9716,
+        77.5946
+      ],
+      "X": 0.82,
+      "U": 0.213,
+      "G": 0.0975,
+      "zone": "RED",
+      "zone_reason": "X >= 0.75",
       "pop": 1450,
-      "assets": [{"type": "hospital", "name": "City General", "value": 1.0}],
+      "assets": [
+        {
+          "type": "hospital",
+          "name": "City General",
+          "value": 1.0
+        }
+      ],
       "reachable": true,
-      "components": {"pga_g": 0.35, "vs30": 280, "damage_prob": 0.61},
-      "uncertainty_components": {"u_model": 0.09, "u_stale": 0.08, "u_cover": 0.06}
+      "components": {
+        "pga_g": 0.35,
+        "vs30": 280,
+        "damage_prob": 0.61
+      },
+      "uncertainty_components": {
+        "u_model": 0.09,
+        "u_stale": 0.08,
+        "u_cover": 0.06
+      },
+      "rescue_priority": 0.4449
     },
     {
       "cell_id": "12.9750_77.5890",
-      "centroid": [12.9750, 77.5890],
-      "X": 0.91, "U": 0.33, "G": 0.05,
-      "zone": "RED", "zone_reason": "X >= 0.75",
+      "centroid": [
+        12.975,
+        77.589
+      ],
+      "X": 0.91,
+      "U": 0.3361,
+      "G": 0.0145,
+      "zone": "RED",
+      "zone_reason": "X >= 0.75",
       "pop": 2310,
-      "assets": [{"type": "school", "name": "Corporation School 4", "value": 0.7}],
+      "assets": [
+        {
+          "type": "school",
+          "name": "Corporation School 4",
+          "value": 0.7
+        }
+      ],
       "reachable": true,
-      "components": {"pga_g": 0.42, "vs30": 240, "damage_prob": 0.74},
-      "uncertainty_components": {"u_model": 0.18, "u_stale": 0.12, "u_cover": 0.08}
+      "components": {
+        "pga_g": 0.42,
+        "vs30": 240,
+        "damage_prob": 0.74
+      },
+      "uncertainty_components": {
+        "u_model": 0.18,
+        "u_stale": 0.12,
+        "u_cover": 0.08
+      },
+      "rescue_priority": 0.5157
     },
     {
       "cell_id": "12.9702_77.5988",
-      "centroid": [12.9702, 77.5988],
-      "X": 0.61, "U": 0.58, "G": 0.12,
-      "zone": "RED", "zone_reason": "X >= 0.40 and U >= 0.50",
+      "centroid": [
+        12.9702,
+        77.5988
+      ],
+      "X": 0.61,
+      "U": 0.5819,
+      "G": 0.2,
+      "zone": "RED",
+      "zone_reason": "X >= 0.4 and U >= 0.50",
       "pop": 980,
-      "assets": [{"type": "bridge", "name": "Canal Rd Overpass", "value": 0.9}],
+      "assets": [
+        {
+          "type": "bridge",
+          "name": "Canal Rd Overpass",
+          "value": 0.9
+        }
+      ],
       "reachable": true,
-      "components": {"pga_g": 0.26, "vs30": 310, "damage_prob": 0.44},
-      "uncertainty_components": {"u_model": 0.31, "u_stale": 0.27, "u_cover": 0.17}
+      "components": {
+        "pga_g": 0.26,
+        "vs30": 310,
+        "damage_prob": 0.44
+      },
+      "uncertainty_components": {
+        "u_model": 0.31,
+        "u_stale": 0.27,
+        "u_cover": 0.17
+      },
+      "rescue_priority": 0.2693
     },
     {
       "cell_id": "12.9688_77.6021",
-      "centroid": [12.9688, 77.6021],
-      "X": 0.52, "U": 0.41, "G": 0.22,
-      "zone": "BLUE", "zone_reason": "X >= 0.40 so not GREEN; U < 0.50 so not RED",
+      "centroid": [
+        12.9688,
+        77.6021
+      ],
+      "X": 0.52,
+      "U": 0.4061,
+      "G": 0.2875,
+      "zone": "BLUE",
+      "zone_reason": "X >= 0.4 so not GREEN; U < 0.50 so not RED",
       "pop": 1120,
       "assets": [],
       "reachable": true,
-      "components": {"pga_g": 0.22, "vs30": 330, "damage_prob": 0.37},
-      "uncertainty_components": {"u_model": 0.22, "u_stale": 0.19, "u_cover": 0.06}
+      "components": {
+        "pga_g": 0.22,
+        "vs30": 330,
+        "damage_prob": 0.37
+      },
+      "uncertainty_components": {
+        "u_model": 0.22,
+        "u_stale": 0.19,
+        "u_cover": 0.06
+      },
+      "rescue_priority": 0.0841
     },
     {
       "cell_id": "12.9801_77.6102",
-      "centroid": [12.9801, 77.6102],
-      "X": 0.38, "U": 0.47, "G": 0.55,
-      "zone": "BLUE", "zone_reason": "U >= 0.35; SAR revisit 11.2 h stale",
+      "centroid": [
+        12.9801,
+        77.6102
+      ],
+      "X": 0.38,
+      "U": 0.4734,
+      "G": 0.5475,
+      "zone": "BLUE",
+      "zone_reason": "U = 0.47 >= 0.35, too uncertain to call safe",
       "pop": 1670,
-      "assets": [{"type": "clinic", "name": "Ward 12 PHC", "value": 0.6}],
+      "assets": [
+        {
+          "type": "clinic",
+          "name": "Ward 12 PHC",
+          "value": 0.6
+        }
+      ],
       "reachable": true,
-      "components": {"pga_g": 0.16, "vs30": 360, "damage_prob": 0.21},
-      "uncertainty_components": {"u_model": 0.11, "u_stale": 0.39, "u_cover": 0.03}
+      "components": {
+        "pga_g": 0.16,
+        "vs30": 360,
+        "damage_prob": 0.21
+      },
+      "uncertainty_components": {
+        "u_model": 0.11,
+        "u_stale": 0.39,
+        "u_cover": 0.03
+      },
+      "rescue_priority": 0.1676
     },
     {
       "cell_id": "12.9640_77.6210",
-      "centroid": [12.9640, 77.6210],
-      "X": 0.31, "U": 0.22, "G": 0.41,
-      "zone": "BLUE", "zone_reason": "G < 0.60, not suitable as a green zone",
+      "centroid": [
+        12.964,
+        77.621
+      ],
+      "X": 0.31,
+      "U": 0.2219,
+      "G": 0.44,
+      "zone": "BLUE",
+      "zone_reason": "G = 0.44 < 0.60, unsuitable as a green zone",
       "pop": 640,
       "assets": [],
       "reachable": true,
-      "components": {"pga_g": 0.13, "vs30": 390, "damage_prob": 0.14},
-      "uncertainty_components": {"u_model": 0.10, "u_stale": 0.09, "u_cover": 0.05}
+      "components": {
+        "pga_g": 0.13,
+        "vs30": 390,
+        "damage_prob": 0.14
+      },
+      "uncertainty_components": {
+        "u_model": 0.1,
+        "u_stale": 0.09,
+        "u_cover": 0.05
+      },
+      "rescue_priority": 0.0286
     },
     {
       "cell_id": "12.9601_77.6033",
-      "centroid": [12.9601, 77.6033],
-      "X": 0.12, "U": 0.18, "G": 0.74,
-      "zone": "GREEN", "zone_reason": "X < 0.40, U < 0.35, G >= 0.60, reachable",
+      "centroid": [
+        12.9601,
+        77.6033
+      ],
+      "X": 0.12,
+      "U": 0.1786,
+      "G": 0.7475,
+      "zone": "GREEN",
+      "zone_reason": "X < 0.4, U < 0.35, G >= 0.60, reachable",
       "pop": 410,
-      "assets": [{"type": "shelter", "name": "Govt High School", "value": 1.0}],
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Govt High School",
+          "value": 1.0
+        }
+      ],
       "reachable": true,
-      "components": {"pga_g": 0.05, "vs30": 520, "damage_prob": 0.04},
-      "uncertainty_components": {"u_model": 0.08, "u_stale": 0.07, "u_cover": 0.04}
+      "components": {
+        "pga_g": 0.05,
+        "vs30": 520,
+        "damage_prob": 0.04
+      },
+      "uncertainty_components": {
+        "u_model": 0.08,
+        "u_stale": 0.07,
+        "u_cover": 0.04
+      },
+      "rescue_priority": 0.0471
     },
     {
       "cell_id": "12.9555_77.6150",
-      "centroid": [12.9555, 77.6150],
-      "X": 0.22, "U": 0.29, "G": 0.68,
-      "zone": "GREEN", "zone_reason": "X < 0.40, U < 0.35, G >= 0.60, reachable",
+      "centroid": [
+        12.9555,
+        77.615
+      ],
+      "X": 0.22,
+      "U": 0.2958,
+      "G": 0.6725,
+      "zone": "GREEN",
+      "zone_reason": "X < 0.4, U < 0.35, G >= 0.60, reachable",
       "pop": 520,
-      "assets": [{"type": "shelter", "name": "Community Hall", "value": 0.8}],
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Community Hall",
+          "value": 0.8
+        }
+      ],
       "reachable": true,
-      "components": {"pga_g": 0.09, "vs30": 480, "damage_prob": 0.08},
-      "uncertainty_components": {"u_model": 0.14, "u_stale": 0.11, "u_cover": 0.08}
+      "components": {
+        "pga_g": 0.09,
+        "vs30": 480,
+        "damage_prob": 0.08
+      },
+      "uncertainty_components": {
+        "u_model": 0.14,
+        "u_stale": 0.11,
+        "u_cover": 0.08
+      },
+      "rescue_priority": 0.0752
     }
   ]
 }

@@ -54,3 +54,10 @@ routing:                         # §7.1 — c(e) = (L/v)(1 + aX + bU)[1 + 0.15(
 
 dispatch:                        # §6.3 — greedy on Pi/c, (1 - 1/e) approximation
   strategy: greedy
+
+exposure:                        # §4.4 — RescuePriority = X * (w1*pop + w2*assets + w3*isolation)
+  # The spec gives the formula but not its weights. Equal thirds until someone
+  # calibrates them against a real incident; this is a knob, not a finding.
+  w_population: 0.3334
+  w_critical_assets: 0.3333
+  w_isolation: 0.3333

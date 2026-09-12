@@ -109,15 +109,27 @@ run_demo.py
 
 ```bash
 pip install -r requirements.txt
-python run_demo.py          # offline; reads only from data/
+
+# hazard score for one cell
+python -m src.hazard.formulas --config configs/disasters/earthquake.yaml --pga_ms2 3.4
+
+# zone engine over a grid, writes the /api/zones contract
+python -m src.hazard.zones --config configs/disasters/earthquake.yaml     --cells data/mock/cell_inputs.earthquake.json -o data/mock/zones.json
+
+python -m src.hazard.test_hazard     # 10 checks, no framework
+python data/mock/check_mocks.py      # fixtures obey the contracts
 ```
+
+Every module runs standalone and fails loudly on missing data rather than
+substituting zeros. A zero hazard score and an unmeasured cell are opposite claims.
 
 ## Status
 
 Scaffolding. The spec is frozen; modules land per §10 of the build plan.
 
-- [ ] `data/mock/*.json`, the four contracts
-- [ ] hazard `X` and the zone engine, with hysteresis
+- [x] `data/mock/*.json`, the four contracts
+- [x] hazard `X`, config-driven over all seven disasters
+- [x] zone engine: noisy-OR `U`, green suitability `G`, hysteresis, exposure score
 - [ ] detection stack and log-odds fusion
 - [ ] priority ranker and risk-aware routing
 - [ ] dashboard
