@@ -117,6 +117,9 @@ python -m src.hazard.formulas --config configs/disasters/earthquake.yaml --pga_m
 python -m src.hazard.zones --config configs/disasters/earthquake.yaml     --cells data/mock/cell_inputs.earthquake.json -o data/mock/zones.json
 
 python -m src.hazard.test_hazard     # 10 checks, no framework
+python -m src.detect.test_detect     # 14 checks, no weights needed
+python -m src.detect.rppg --demo     # synthetic pulse, no camera
+python -m src.detect.fusion --demo   # the p_alive ladder
 python data/mock/check_mocks.py      # fixtures obey the contracts
 ```
 
@@ -130,6 +133,7 @@ Scaffolding. The spec is frozen; modules land per §10 of the build plan.
 - [x] `data/mock/*.json`, the four contracts
 - [x] hazard `X`, config-driven over all seven disasters
 - [x] zone engine: noisy-OR `U`, green suitability `G`, hysteresis, exposure score
-- [ ] detection stack and log-odds fusion
+- [x] detection stack: POS rPPG, thermal blobs, RGB-T merge, log-odds fusion
+- [ ] YOLO and YAMNet weights (training on the team's own machines)
 - [ ] priority ranker and risk-aware routing
 - [ ] dashboard

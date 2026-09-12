@@ -1,3 +1,13 @@
+# Core engine. Hazard, zones, rPPG, thermal and fusion run on these two alone.
 PyYAML==6.0.2
+numpy==2.1.3
+
+# API + dashboard server.
 fastapi==0.111.1
 uvicorn==0.30.3
+
+# Detection models. Install on the machine that runs them; the CPU paths above do not
+# need these, and every module raises a named error rather than importing silently.
+# ultralytics==8.3.0        # RGB + thermal YOLO
+# tensorflow==2.18.0        # YAMNet acoustic
+# opencv-python==4.10.0.84  # webcam capture for the live rPPG demo
