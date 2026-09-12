@@ -7,3 +7,13 @@ uncertainty:
   tau_data_hours: 6.0
 models:
   primary: physics_baseline
+
+dataset:
+  kaggle: jaynadkarni/indian-forest-fires-dataset
+  columns:
+    fwi: [fwi, fire_weather_index, fire_index]
+    brightness: [brightness, bright_ti4, temp, frp]
+    confidence: [confidence, conf]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    date: [date, acq_date, time, year]

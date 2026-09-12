@@ -11,3 +11,12 @@ uncertainty:
   tau_data_hours: 6.0
 models:
   primary: xgboost_plus_segformer_b0
+
+dataset:
+  kaggle: aksahaha/rainfall-india
+  columns:
+    r24_mm: [rainfall, rain_mm, actual, precipitation, rain, rainfall_mm, ACTUAL (mm)]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    district: [district, dist, subdivision, region, state]
+    date: [date, obs_date, time, year]

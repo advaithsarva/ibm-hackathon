@@ -22,3 +22,11 @@ uncertainty:
   tau_data_hours: 6.0
 models:
   primary: physics_baseline
+dataset:
+  kaggle: aksahaha/rainfall-india
+  columns:
+    r24_mm: [rainfall, rain_mm, actual, precipitation, rain, rainfall_mm]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    district: [district, dist, subdivision, region, state]
+    date: [date, obs_date, time, year]

@@ -151,6 +151,73 @@ def test_sync_output_drives_the_zone_engine():
     assert len(result["grid_cells"]) == 8
 
 
+# --- kaggle datasets -------------------------------------------------------------
+
+def test_kaggle_registry_covers_every_disaster_config():
+    """Each of the seven hazards must have a dataset, or the config-driven claim is thin."""
+    from src.ingest.kaggle_sets import DATASETS
+    # flood is covered by flood_rainfall: the Kaggle rainfall file has no river
+    # discharge, so flood.yaml cannot be satisfied from it without inventing numbers.
+    for name in ("flood_rainfall", "cyclone", "drought", "earthquake", "landslide",
+                 "lightning", "wildfire"):
+        assert name in DATASETS, f"{name} has no Kaggle dataset registered"
+        assert DATASETS[name]["slug"].count("/") == 1, f"{name}: malformed slug"
+
+
+def test_column_resolver_handles_real_world_headers():
+    """These files use names no exact alias list will ever cover."""
+    from src.ingest.kaggle_sets import resolve_columns
+
+    header = ["Origin Time", "Latitude (deg)", "Longitude (deg)", "Magnitude (Mw)",
+              "Focal Depth (km)", "Region"]
+    wanted = {"lat": ["latitude", "lat"], "lon": ["longitude", "lon"],
+              "magnitude_mw": ["magnitude", "mw"], "depth_km": ["depth", "focal_depth"],
+              "pga_ms2": ["pga", "peak_ground_acceleration"]}
+    resolved, unresolved = resolve_columns(header, wanted)
+
+    assert resolved["magnitude_mw"] == "Magnitude (Mw)"
+    assert resolved["lat"] == "Latitude (deg)"
+    assert resolved["depth_km"] == "Focal Depth (km)"
+    assert unresolved == ["pga_ms2"], "a genuinely absent column must be reported"
+
+    # Exact matches must win over substring ones: "lon" appears inside "longitude" too.
+    exact, _ = resolve_columns(["lat", "latitude_something"], {"lat": ["lat"]})
+    assert exact["lat"] == "lat"
+
+
+def test_pga_is_derived_when_the_catalogue_has_no_pga_column():
+    """Earthquake catalogues list magnitude and depth, never PGA. Derive it, do not
+    demand a column that does not exist and do not substitute a zero."""
+    from src.ingest.kaggle_sets import _derive_pga
+
+    strong = _derive_pga({"magnitude_mw": 6.2, "depth_km": 25.0})
+    weak = _derive_pga({"magnitude_mw": 3.8, "depth_km": 12.0})
+    assert strong > weak, "a bigger magnitude must produce stronger shaking"
+    assert 0.01 < strong / 9.80665 < 2.0, f"{strong / 9.80665:.3f} g is not physical"
+
+    # Deeper events shake the surface less at the epicentre.
+    assert _derive_pga({"magnitude_mw": 6.0, "depth_km": 10.0}) >         _derive_pga({"magnitude_mw": 6.0, "depth_km": 60.0})
+
+    # Missing or nonsensical inputs return None so the row is skipped, not zeroed.
+    assert _derive_pga({"magnitude_mw": 6.0}) is None
+    assert _derive_pga({"depth_km": 10.0}) is None
+    assert _derive_pga({"magnitude_mw": 6.0, "depth_km": 0.0}) is None
+
+
+def test_every_disaster_config_declares_its_dataset_columns():
+    from src.hazard.formulas import load_config
+    from src.ingest.kaggle_sets import DATASETS, dataset_config
+
+    for name in DATASETS:
+        cfg = load_config(f"configs/disasters/{name}.yaml")
+        block = dataset_config(cfg)
+        assert "lat" in block["columns"] and "lon" in block["columns"],             f"{name}: needs lat and lon aliases or nothing can be put on the grid"
+        # Every hazard input must be either mapped or derivable.
+        from src.ingest.kaggle_sets import DERIVATIONS
+        for field in cfg["hazard"]["inputs"]:
+            assert field in block["columns"] or (name, field) in DERIVATIONS,                 f"{name}: hazard input {field!r} is neither mapped nor derivable"
+
+
 # --- priority --------------------------------------------------------------------
 
 def test_survivability_decays_on_the_spec_constants():

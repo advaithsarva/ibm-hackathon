@@ -11,3 +11,13 @@ uncertainty:
 models:                                        # §3.3
   primary: gnn_or_catboost
   damage: xbd_baseline
+
+dataset:
+  kaggle: ankitd7752/indian-subcontinent-earthquake-data-2000-to-2024
+  columns:
+    pga_ms2: [pga, pga_ms2, peak_ground_acceleration]
+    magnitude_mw: [magnitude, mag, mw, magnitude_mw]
+    depth_km: [depth, focal_depth, depth_km]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    date: [date, time, origin_time, datetime]

@@ -13,3 +13,13 @@ models:
   primary: holland_plus_gbdt
 grid:
   cell_size_m: 1000                            # §1.2 regional
+
+dataset:
+  kaggle: rajumavinmar/cyclone-dataset
+  columns:
+    wind_kmh: [wind_kmh, max_wind, wind_speed, wind, maximum sustained wind, usa_wind, wmo_wind]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    pressure_hpa: [pressure, central_pressure, wmo_pres, usa_pres, mslp]
+    name: [name, cyclone_name, storm]
+    date: [date, iso_time, time, season, year]

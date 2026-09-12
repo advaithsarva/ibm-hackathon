@@ -11,3 +11,12 @@ uncertainty:
   tau_data_hours: 6.0
 models:
   primary: fs_plus_xgboost
+
+dataset:
+  kaggle: rajumavinmar/landslide-dataset
+  columns:
+    r3d_mm: [rainfall, rain_mm, precipitation, rainfall_mm, antecedent_rainfall]
+    slope_deg: [slope, slope_deg, slope_angle, gradient]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    date: [date, event_date, time, year]

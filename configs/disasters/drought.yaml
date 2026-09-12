@@ -13,3 +13,12 @@ models:
   primary: statistical_vci_plus_gradient_boosting
 grid:
   cell_size_m: 1000                            # §1.2 regional
+
+dataset:
+  kaggle: kevinmathewsgeorge/india-drought-analysis-data-2000-2023
+  columns:
+    smi: [smi, soil_moisture_index, soil_moisture, moisture_index, spi, ndvi]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    district: [district, dist, region, state]
+    date: [date, year, month, time]

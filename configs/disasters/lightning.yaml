@@ -11,3 +11,12 @@ uncertainty:
   tau_data_hours: 1.0
 models:
   primary: cape_threshold_plus_random_forest
+
+dataset:
+  kaggle: shhhantanu/lightning-event-records-for-india-20192022
+  columns:
+    cape_j_kg: [cape, cape_j_kg, convective_available_potential_energy]
+    lat: [latitude, lat, y]
+    lon: [longitude, lon, long, x]
+    strokes: [strokes, flash_count, count, strikes, flashes]
+    date: [date, time, datetime, year]

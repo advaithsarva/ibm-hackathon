@@ -150,6 +150,39 @@ python -m src.hazard.zones --config configs/disasters/flood_rainfall.yaml \
 
 The 141.9 mm cell scores `X = 0.89`, RED.
 
+## The seven Kaggle datasets
+
+One per hazard config, registered in `src/ingest/kaggle_sets.py`:
+
+```bash
+python -m src.ingest.kaggle_sets --list                 # what is downloaded
+python -m src.ingest.kaggle_sets --inspect earthquake   # what columns the file really has
+python -m src.ingest.kaggle_sets --load earthquake -o data/cache/cell_inputs.eq.json
+python -m src.hazard.zones --config configs/disasters/earthquake.yaml     --cells data/cache/cell_inputs.eq.json -o data/cache/zones.eq.json
+```
+
+Nothing hardcodes a schema. Each disaster config carries a `dataset.columns` block of
+candidate column names, and the loader resolves the real header against them — exact
+match first, then substring, so `Magnitude (Mw)` and `ACTUAL (mm)` resolve without
+anyone editing code. `--inspect` prints the header, says which aliases matched, and names
+the ones that did not, so adapting to a new file is a YAML edit.
+
+Two mappings are deliberate rather than obvious:
+
+**Earthquake catalogues carry magnitude and depth, never PGA.** Rather than demanding a
+column that cannot exist, the loader derives it through the GMPE in
+`src/hazard/physics.py`. Epicentral distance is taken as zero, so the figure is the
+shaking directly above the hypocentre — the right number for a worst-case impact zone,
+the wrong one for anywhere further out.
+
+**The rainfall dataset maps to `flood_rainfall`, not `flood`.** `flood.yaml` needs river
+discharge, this dataset has none, and deriving discharge from rainfall through an invented
+rating coefficient is exactly the guesswork `flood_rainfall` exists to avoid.
+
+Four of the seven are historical event catalogues rather than current conditions. They are
+the right input for base rates, validation and training, and the wrong input for "what is
+happening right now" — that still needs a live feed.
+
 ## API
 
 Four contracts frozen early so the dashboard could be built before any engine existed,
