@@ -1,14 +1,41 @@
 # Disaster Response Intelligence Pipeline
 
-Hazard scoring, uncertainty-aware zoning, multi-sensor survivor detection, and
-capacity-aware evacuation routing, in one dashboard that runs with the network unplugged.
+**IBM Hackathon — Problem Statement 1: AI-Powered Disaster Early Warning & Rescue
+Intelligence Platform**
 
-Build spec: [`DISASTER_PIPELINE_SPEC.md`](DISASTER_PIPELINE_SPEC.md). Read §0 and §2 first.
+A district faces a monsoon over the next 24–48 hours. Heavy rainfall, urban flooding,
+river overflow, landslides, roads and hospitals cut off. This turns the heterogeneous data
+emergency teams already receive — rainfall grids, river gauges, satellite imagery,
+terrain, population, infrastructure — into four answers a district operations director can
+act on.
+
+Build spec: [`DISASTER_PIPELINE_SPEC.md`](DISASTER_PIPELINE_SPEC.md).
+
+## What PS-1 asks, and where it is answered
+
+| The question | Answered by | Code |
+|---|---|---|
+| Where is the disaster likely to occur? | hazard score `X` per 100 m cell, then RED/BLUE/GREEN zoning | `src/hazard/` |
+| Who and what is likely to be affected? | population and weighted critical assets per cell, plus an isolation factor | `src/ingest/level3_infra.py` |
+| Which locations should teams respond to first? | expected lives saved, `Π = N · P_alive · S(t + ETA) · κ`, then greedy dispatch under a team-hour budget | `src/priority/` |
+| What is the safest and fastest evacuation route? | risk-weighted Dijkstra, then capacity-aware min-cost flow to shelters | `src/routing/` |
+
+## Quick start
+
+```bash
+git clone https://github.com/advaithsarva/ibm-hackathon
+cd ibm-hackathon
+pip install -r requirements.txt
+python run_demo.py                    # API on http://localhost:8000
+```
+
+Two dependencies carry the whole engine: PyYAML and numpy. Nothing touches the network
+after the install.
 
 ## The idea
 
-Every cell on a 100 m grid carries three numbers: hazard `X`, epistemic uncertainty `U`, and
-green-zone suitability `G`. Those produce three zones.
+Every cell on a 100 m grid carries three numbers: hazard `X`, epistemic uncertainty `U`,
+and green-zone suitability `G`. Those produce three zones.
 
 | Zone | Meaning | Action |
 |---|---|---|
@@ -17,18 +44,23 @@ green-zone suitability `G`. Those produce three zones.
 | GREEN | safe, reachable, has shelter capacity | evacuate here |
 
 ```
-RED    if  X ≥ 0.75  OR  (X ≥ 0.40 AND U ≥ 0.50)
-GREEN  if  X < 0.40  AND  U < 0.35  AND  G ≥ 0.60  AND reachable
+RED    if  X >= 0.75  OR  (X >= 0.40 AND U >= 0.50)
+GREEN  if  X < 0.40   AND U < 0.35  AND G >= 0.60  AND reachable
 BLUE   otherwise
 ```
 
-BLUE is what the rest of the system is built around. Most risk maps put uncertainty in a
-confidence interval nobody acts on — here it's a zone class with a queue position. A cell
-turns blue when the SAR revisit is 11 hours stale, or when the sensors only covered part of
-it, and that cell goes to the top of the recon list.
+BLUE is the contribution. Most risk maps bury uncertainty in a confidence interval nobody
+acts on — here it is a zone class with a queue position. `U` is a noisy-OR over three
+failure modes, so any one is enough to raise it and they compound rather than average:
 
-`U` is a noisy-OR over those three failure modes: model disagreement, data staleness, and
-sensor coverage gaps.
+```
+U = 1 − (1 − u_model)(1 − u_stale)(1 − u_cover)
+```
+
+A cell turns blue when the models disagree, when the satellite pass is eleven hours old,
+or when the sensors only covered part of it — and the API says which, per cell. Cells
+change class only after crossing a threshold by 0.05 and holding two cycles, so a cell
+sitting on a boundary does not flicker.
 
 ## Pipeline
 
@@ -74,38 +106,59 @@ sensor coverage gaps.
           └── Report Generator
 ```
 
-| Stage | Status |
-|---|---|
-| Levels 1–3 ingest, cleaning, synchronization | `src/ingest/`, running on a synthetic scene |
-| ML inference engine | physics baselines in `src/hazard/physics.py`; no trained models yet |
-| Normalized threshold mapping | `src/hazard/formulas.py` |
-| Zone engine | `src/hazard/zones.py` |
-| Risk & impact map, rescue priority score | exposure score in `zones.py`; map layers not built |
-| Detection & vitals fusion | `src/detect/` |
-| Evacuation priority ranker | `src/priority/` |
-| Route optimizer | `src/routing/` |
-| Report generator | `src/report/generate.py` |
-| Alert dashboard | `/api/alert/summary` only; no UI |
-| Interactive GIS map | not built |
+Two decisions in there are worth defending.
 
-Two decisions in there are worth knowing about before you read the code.
+**`ETA` sits inside the survivability decay term of `Π`, not outside it.** The ranking
+accounts for who is still alive when the team arrives, not only how many are there now.
+How much that changes the order depends on the disaster: at flood's τ of 8 hours a larger
+distant cluster still wins, while at wildfire's τ of 2 hours the same 90-minute ETA flips
+it. `python -m src.priority.expected_lives --demo` prints both cases side by side.
 
-`ETA` sits inside the survivability decay term of `Π`, not outside it. A cluster of six people
-18 minutes away outranks a larger cluster 90 minutes away, because the ranking accounts for who
-is still alive when the team arrives.
+**Evacuation is min-cost flow rather than shortest path.** Shortest path sends everyone to
+the nearest shelter and overflows it. The flow formulation holds each shelter to capacity,
+spills the remainder to the next, and reports whoever could not be placed instead of
+quietly dropping them.
 
-Evacuation is min-cost flow rather than shortest path. Shortest path sends everyone to the
-nearest shelter and overflows it; the flow formulation holds each shelter to its capacity and
-spills the remainder to the next one.
+## Real data
+
+`src/ingest/imd_grid.py` reads IMD's 0.25° gridded daily rainfall, the National Water Data
+Portal product PS-1 names first.
+
+```bash
+python -m src.ingest.imd_grid --grd data/raw/imd/rain_ind0.25_26_09_12.grd --top 10
+```
+
+```
+4964 land cells, mean 6.8 mm, max 141.89 mm at [26.5, 94.0]
+45 cells over IMD's 64.5 mm heavy-rain threshold, 4 over 100 mm
+```
+
+The `.grd` is headerless little-endian float32, 129 latitudes by 135 longitudes, so
+nothing in the file tells you whether your reshape is transposed — and a transposed read
+still produces plausible-looking rainfall in entirely the wrong places.
+`verify_orientation()` checks the land mask against geography instead: no land below 8°N,
+widest across 20–28°N. It raises rather than mapping one district's rainfall onto another.
+
+Straight into the engine:
+
+```bash
+python -m src.ingest.imd_grid --grd data/raw/imd/rain_ind0.25_26_09_12.grd \
+    --cells --top 40 -o data/cache/cell_inputs.imd.json
+python -m src.hazard.zones --config configs/disasters/flood_rainfall.yaml \
+    --cells data/cache/cell_inputs.imd.json -o data/cache/zones.imd.json
+```
+
+The 141.9 mm cell scores `X = 0.89`, RED.
 
 ## API
 
-Four read-only contracts, frozen at minute 15, plus two the alert panel adds. Responses
-are served from `data/mock/` until engine output replaces them.
+Four contracts frozen early so the dashboard could be built before any engine existed,
+plus two the alert panel adds. Responses come from `data/mock/` until engine output
+replaces them; the shapes are identical either way.
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/zones` | grid cells with `X`, `U`, `G`, `zone`, population, assets |
+| `GET /api/zones` | grid cells with `X`, `U`, `G`, `zone`, `zone_reason`, population, assets |
 | `GET /api/detections` | per-cell sensor hits, fused `p_alive`, `n_est` |
 | `GET /api/priority` | ranked dispatch plan with `pi`, `eta_min`, team, route |
 | `GET /api/evacuation` | shelter flow assignment, utilization, overflow |
@@ -114,17 +167,33 @@ are served from `data/mock/` until engine output replaces them.
 
 Every response joins on `cell_id`, the `"{lat:.4f}_{lon:.4f}"` centroid string.
 
-`/api/radar/heartbeat` returns a simulated waveform. FINDER-class radar is the ground-truth
-sensor for through-rubble vitals and it is hardware we do not have, so the endpoint models
-what the panel would show rather than claiming a reading. The rPPG pulse in
-`/api/detections` is real signal processing on a real camera feed.
+## What is real and what is not
+
+Worth stating plainly, because a demo that overclaims loses the room in Q&A.
+
+| Component | Status |
+|---|---|
+| IMD gridded rainfall | real data, decoded and orientation-verified |
+| Hazard formulas, zone engine, uncertainty, hysteresis | real, implemented from the spec |
+| rPPG pulse extraction | real POS signal processing; refuses to report a BPM below 3 dB SNR |
+| Thermal hotspot detection | real adaptive-percentile blob detection |
+| Priority, dispatch, routing, evacuation flow | real algorithms, currently on synthetic inputs |
+| River discharge, terrain elevation, population join | modelled stand-ins, labelled in every record |
+| YOLO and YAMNet detections | wrappers ready, weights train separately |
+| `GET /api/radar/heartbeat` | **simulated.** FINDER-class radar is hardware we do not have |
+
+`configs/disasters/flood.yaml` needs river discharge. With no CWC gauge export, both the
+rating coefficient and bankfull `q_max` would be invented, and inventing them put every
+real IMD cell in the wrong tier. `configs/disasters/flood_rainfall.yaml` drops discharge
+and anchors `X` to IMD's own published rainfall categories instead, so every number traces
+to a documented threshold.
 
 ## Layout
 
 ```
 configs/
   global.yaml              grid, thresholds, zone rule, uncertainty, fusion table, routing
-  disasters/*.yaml         seven hazards, one shared engine; only the formula for X changes
+  disasters/*.yaml         eight configs, one shared engine; only the formula for X changes
 src/
   grid.py                  cell_id conventions
   hazard/
@@ -132,6 +201,13 @@ src/
     physics.py             Manning · Holland · GMPE · factor of safety · VCI · flash rate
     zones.py               U, G, RED/BLUE/GREEN, hysteresis, exposure score
     test_hazard.py         10 checks
+  ingest/
+    sources.py             registry of every PS-1 dataset, offline-first fetcher
+    imd_grid.py            IMD 0.25° .grd reader with an orientation guard
+    level1_meteo.py        rainfall accumulation, gauge levels
+    level2_geo.py          slope, inundation depth, SAR water mask
+    level3_infra.py        OSM asset weighting, population binning, isolation
+    sync.py                regrid, age layers, emit cell inputs
   detect/
     rppg.py                POS pulse extraction, pure numpy, CPU
     thermal.py             adaptive-percentile hotspot blobs
@@ -140,98 +216,116 @@ src/
     fusion.py              RGB-T late NMS merge, Bayesian log-odds
     loader.py              sequential GPU model guard
     test_detect.py         14 checks
-  ingest/
-    sources.py             dataset registry, offline-first fetcher
-    level1_meteo.py        IMD rainfall accumulation, gauge levels
-    level2_geo.py          slope, inundation depth, SAR water mask
-    level3_infra.py        OSM assets, population binning, isolation
-    sync.py                regrid, age layers, emit cell inputs
   priority/
-    survivability.py       S(t) = exp(-t/tau)
-    expected_lives.py      Pi = N * P_alive * S(t+ETA) * kappa
+    survivability.py       S(t) = exp(−t/τ)
+    expected_lives.py      Π = N · P_alive · S(t+ETA) · κ
     dispatch.py            greedy knapsack under a team-hour budget
   routing/
     graph.py               risk-weighted edges, Dijkstra, reachability
     evacuation.py          min-cost flow to shelters
-  report/generate.py       incident brief, Claude API with a template fallback
+  report/generate.py       incident brief, Claude API with a deterministic fallback
   test_pipeline.py         21 checks
-backend/main.py            FastAPI, serves the contracts
+backend/main.py            FastAPI, serves the six endpoints
 data/
-  mock/                    the frozen contracts, plus the engine's cell inputs
-  raw/, cache/             pre-downloaded inputs and weights, gitignored
+  mock/                    the frozen contracts, plus generated cell inputs
+  raw/, cache/             downloaded inputs and weights, gitignored
 run_demo.py                starts the API server
 ```
 
-The dashboard is the remaining gap. Everything else in the spec's §1.3 layout exists.
+The dashboard is the remaining gap. `backend/main.py` already mounts `frontend/` as static
+files, so dropping an `index.html` there serves it at the root with no further wiring.
 
-## Constraints
+## Running the modules
 
-- Models load sequentially, never concurrently, so the stack runs on a single GPU.
-- Train nothing. Everything is inference-only or classical. Where weights don't exist the
-  physics formula runs directly, labelled as a physics-based baseline.
-- Assume the network fails at demo time. All data is pre-downloaded and `run_demo.py` reads
-  only from disk.
-- Earthquake is the shipping vertical slice. The other six disasters are config over the same
-  engine.
-
-## Run
+Every module runs standalone and fails loudly on missing data rather than substituting
+zeros. A zero hazard score and an unmeasured cell are opposite claims.
 
 ```bash
-pip install -r requirements.txt
-
-# API server on http://localhost:8000
-python run_demo.py
-
 # hazard score for one cell
 python -m src.hazard.formulas --config configs/disasters/earthquake.yaml --pga_ms2 3.4
 
-# zone engine over a grid, writes the /api/zones contract
-python -m src.hazard.zones --config configs/disasters/earthquake.yaml \
-    --cells data/mock/cell_inputs.earthquake.json -o data/mock/zones.json
+# the flood path end to end
+python -m src.ingest.sync --demo --config configs/disasters/flood.yaml \
+    -o data/mock/cell_inputs.flood.json
+python -m src.hazard.zones --config configs/disasters/flood.yaml \
+    --cells data/mock/cell_inputs.flood.json -o data/cache/zones.flood.json
 
-python -m src.hazard.physics         # governing physics, worked examples
-
-# the flood path end to end, which is the PS-1 scenario
-python -m src.ingest.sync --demo --config configs/disasters/flood.yaml     -o data/mock/cell_inputs.flood.json
-python -m src.hazard.zones --config configs/disasters/flood.yaml     --cells data/mock/cell_inputs.flood.json -o data/cache/zones.flood.json
-
-python -m src.ingest.sources --list    # which datasets are present
+python -m src.ingest.sources --list        # which datasets are present
+python -m src.hazard.physics               # governing physics, worked examples
+python -m src.detect.rppg --demo           # synthetic pulse, no camera
+python -m src.detect.rppg --webcam         # live, needs opencv-python
+python -m src.detect.fusion --demo         # the p_alive ladder
 python -m src.priority.expected_lives --demo
 python -m src.priority.dispatch --demo
 python -m src.routing.graph --demo
 python -m src.routing.evacuation --demo
 python -m src.report.generate --offline
-python -m src.detect.rppg --demo     # synthetic pulse, no camera
-python -m src.detect.rppg --webcam   # live, needs opencv-python
-python -m src.detect.fusion --demo   # the p_alive ladder
+```
 
-python -m src.hazard.test_hazard     # 10 checks, no framework
-python -m src.detect.test_detect     # 14 checks, no weights needed
-python -m src.test_pipeline          # 21 checks, ingest through report
+`data/mock/zones.json` is generated by the zone engine from `cell_inputs.earthquake.json`
+rather than hand-written, so the fixture cannot drift from the code. Regenerate and diff.
+
+## Configuration
+
+Adding a disaster is a YAML file, not a code change:
+
+```yaml
+name: earthquake
+hazard:
+  formula: "min(1.0, pga_ms2 / 4.0)"
+  inputs: [pga_ms2]
+  tau_survivability_hours: 40
+uncertainty:
+  tau_data_hours: 1.0
+```
+
+`configs/global.yaml` holds the shared values: the zone rule, noisy-OR parameters,
+green-suitability weights, log-odds likelihood ratios and routing penalties.
+
+Two blocks there are calibration knobs rather than findings, and both say so in place. The
+GMPE attenuation coefficients need refitting per region before any absolute PGA is
+trustworthy, and the §4.4 exposure weights have no values in the spec, so they sit at
+equal thirds.
+
+## Testing
+
+```bash
+python -m src.hazard.test_hazard     # 10 checks
+python -m src.detect.test_detect     # 14 checks
+python -m src.test_pipeline          # 21 checks
 python data/mock/check_mocks.py      # fixtures obey the contracts
 ```
 
-There is no browser UI at the moment: `run_demo.py` starts the API and the endpoints
-return JSON. `data/mock/zones.json` is generated by the zone engine from
-`cell_inputs.earthquake.json` rather than hand-written, so the fixture cannot drift from
-the code. Regenerate it with the command above and diff.
+45 checks, no framework and no fixtures. They test behaviour rather than restating the
+code: that a pulse buried at the noise floor is refused rather than guessed, that a road
+through a cell at `X >= 0.75` is never routed, that shelter capacity is never exceeded,
+that a cell with no route is reported instead of dropped, and that the IMD grid raises if
+its orientation looks wrong.
 
-Every module runs standalone and fails loudly on missing data rather than
-substituting zeros. A zero hazard score and an unmeasured cell are opposite claims.
+## Constraints
+
+- Models load sequentially, never concurrently, so the stack runs on a single GPU.
+  `src/detect/loader.py` raises rather than letting a second model load.
+- Train nothing at build time. Everything is inference-only or classical. Where weights do
+  not exist the physics formula runs directly, labelled as a physics-based baseline.
+- Assume the network fails at demo time. All data is pre-downloaded to `data/raw/` and
+  nothing is fetched at runtime.
+- Model weights are not in the repository. Put them under `data/raw/weights/`; the YOLO
+  and YAMNet wrappers raise a named error when a file is missing, so a model that never
+  ran is never mistaken for a cell with nobody in it.
 
 ## Status
 
-The spec is frozen; modules land per §10 of the build plan.
-
-- [x] `data/mock/*.json`, the four contracts
-- [x] hazard `X`, config-driven over all seven disasters
-- [x] zone engine: noisy-OR `U`, green suitability `G`, hysteresis, exposure score
-- [x] detection stack: POS rPPG, thermal blobs, RGB-T merge, log-odds fusion
+- [x] Four frozen API contracts with mock fixtures
+- [x] Hazard `X`, config-driven across eight disaster configs
+- [x] Zone engine: noisy-OR `U`, green suitability `G`, hysteresis, exposure score
+- [x] Real IMD gridded rainfall, decoded and orientation-verified
+- [x] Ingest: rainfall accumulation, terrain, infrastructure, layer ageing
+- [x] Detection: POS rPPG, thermal blobs, RGB-T merge, Bayesian log-odds fusion
+- [x] Priority: survivability decay, expected lives, greedy dispatch
+- [x] Routing: risk-weighted Dijkstra, capacity-aware evacuation flow
+- [x] Report generator with an offline template
 - [x] FastAPI backend serving all six endpoints
-- [x] ingest: rainfall accumulation, terrain, infrastructure, layer ageing
-- [x] priority ranker: survivability decay, expected lives, greedy dispatch
-- [x] routing: risk-weighted Dijkstra, capacity-aware evacuation flow
-- [x] report generator with an offline template
-- [ ] dashboard
-- [ ] YOLO and YAMNet weights (training on the team's own machines)
-- [ ] real IMD, Bhuvan, Sentinel and WorldPop exports replacing the synthetic scene
+- [ ] Dashboard
+- [ ] YOLO and YAMNet weights, training on the team's own machines
+- [ ] Real Bhuvan, Sentinel-1 and WorldPop exports replacing the modelled stand-ins
