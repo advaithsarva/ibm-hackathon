@@ -39,7 +39,7 @@ python run_demo.py                    # API + dashboard on http://localhost:8000
 ```
 
 The engine needed three dependencies: PyYAML, numpy and networkx. Nothing reaches the
-network after install — the demo was built to run with the cable out, and the dashboard
+network after install. The demo was built to run with the cable out, and the dashboard
 vendors its own copy of Leaflet for the same reason.
 
 The dashboard lives in `frontend/`. `backend/main.py` mounts that directory
@@ -64,17 +64,16 @@ GREEN  if  X < 0.40   AND U < 0.35  AND G >= 0.60  AND reachable
 BLUE   otherwise
 ```
 
-**BLUE is the contribution.** Most risk maps bury uncertainty in a confidence interval
-nobody acts on. We made it a zone class with a queue position. `U` is a noisy-OR over
-three failure modes, so any one is enough to raise it and they compound rather than
-average:
+BLUE is the contribution. Most risk maps bury uncertainty in a confidence interval nobody
+acts on; we made it a zone class with a queue position. `U` is a noisy-OR over
+three failure modes, so any one of them is enough to raise it, and together they compound:
 
 ```
 U = 1 − (1 − u_model)(1 − u_stale)(1 − u_cover)
 ```
 
 A ward turned blue when the models disagreed, when the satellite pass was eleven hours
-old, or when the sensors only covered part of it — and the API reports which, per ward,
+old, or when the sensors only covered part of it, and the API reports which, per ward,
 so the dashboard shows the operator *why*. Wards change class only after crossing a
 threshold by 0.05 and holding two cycles, so a ward on a boundary does not flicker.
 
@@ -94,8 +93,8 @@ Moving the sliders re-ran the model rather than replaying a recording:
 
 ### Seven hazards over one ward model
 
-Each hazard derives its own inputs from the same terrain, using the physics in
-`src/hazard/physics.py` rather than a second set of constants.
+Each hazard derives its own inputs from the same terrain, using the physics already in
+`src/hazard/physics.py`. There is no second set of constants.
 
 | Hazard | Driving inputs | Result |
 |---|---|---|
@@ -158,20 +157,20 @@ ETA inside. The API reports which ranking it used.
           └── Incident Action Plan
 ```
 
-### Two decisions worth defending
+### Two decisions a judge will probe
 
 **`ETA` sits inside the survivability decay term of `Π`, not outside it.** The ranking
 accounts for who is still alive when the team arrives, not only how many are there now.
 How much that changes the order depends on the hazard: at flood's τ of 8 hours a larger
 distant cluster still wins, while at wildfire's τ of 2 hours the same 90-minute ETA flips
 it. `python -m src.priority.expected_lives --demo` prints both cases. The claim is
-conditional and the code says so rather than overselling it.
+conditional, and the code says so.
 
 **Rainfall is near-uniform across a district; flooding is not.** What separates wards is
 how much rain *stays*. A ward 20 m above the floodplain sheds it; a ward 1.5 m above
 retains it. Our first version fed raw rainfall into the hazard formula, scored every ward
-identically, and painted the map uniformly red — the same result as having no model at
-all.
+identically, and painted the map uniformly red. That is the same result as having no
+model at all.
 
 ---
 
@@ -199,15 +198,15 @@ python -m src.ingest.imd_grid --grd data/raw/imd/rain_ind0.25_26_09_12.grd --top
 ```
 
 The `.grd` is headerless little-endian float32, 129 latitudes by 135 longitudes, so
-nothing in the file said whether our reshape was transposed — and a transposed read still
+nothing in the file said whether our reshape was transposed, and a transposed read still
 produces plausible-looking rainfall in entirely the wrong districts.
 `verify_orientation()` checks the land mask against geography instead: no land below 8°N,
-widest across 20–28°N. It raises rather than mapping one district's rainfall onto another.
+widest across 20–28°N. A transposed read raises there and never reaches the map.
 
 ### Column mapping
 
 Nothing hardcodes a schema. Each disaster config carries a `dataset.columns` block of
-candidate names, and the loader resolves the real header against them — exact match
+candidate names, and the loader resolves the real header against them: exact match
 first, then whole-token, so `Magnitude (Mw)` and `Focal Depth (km)` resolved without
 anyone editing code.
 
@@ -242,7 +241,7 @@ Logistic regression on standardised features, held-out stratified validation:
 
 Plus a spatial prior over **1,715 cells** from the earthquake catalogue: event count,
 maximum observed magnitude and median depth per 0.5° cell. That one is a prior, not a
-classifier — magnitude is not predictable from position, and a model claiming otherwise
+classifier: magnitude is not predictable from position, and a model claiming otherwise
 would be fitting noise.
 
 Feature importance came out of the trained weights, not from an assumption. On
@@ -262,14 +261,13 @@ nothing. We excluded it and added `check_leakage()`, which now refuses to build 
 feature set containing a column correlated above r = 0.99 with its target.
 
 **Two of the datasets were synthetic and trivially separable.** A shuffled-label control
-collapsed to 0.50 and 0.53, so the separation was in the data rather than in a broken
-measurement. We stopped there rather than spending GPU time proving it twice.
+collapsed to 0.50 and 0.53, so the separation is real and the measurement is sound. We
+stopped there. Spending a night of GPU time to prove it twice would buy nothing.
 
 **Extreme-monsoon prediction is the one task still open.** 79% accuracy sounds
 respectable and is worthless: the base rate is 79.3% and recall is 0.022, so the model is
 predicting "not extreme" for everything. ROC-AUC of 0.662 is the honest measure. The
-tooling prints that warning rather than the flattering accuracy, and the dashboard's
-model card shows the same sentence. Predicting a severe monsoon from its first half, on
+tooling leads with that warning, and the dashboard's model card shows the same sentence. Predicting a severe monsoon from its first half, on
 real IMD records going back to 1901, is exactly what PS-1 asks for and is where a
 gradient-boosted model would earn its keep.
 
@@ -277,7 +275,7 @@ gradient-boosted model would earn its keep.
 
 ## 7. API
 
-Eight endpoints, all computed by the engine rather than replayed from fixtures.
+Eight endpoints, all computed by the engine on every request.
 
 | Endpoint | Returns |
 |---|---|
@@ -299,8 +297,8 @@ recomputes every `X`, `U`, `G` and zone from them.
 
 **Every value the dashboard displays is backed by an API field.** The model card reports
 measured accuracy, ROC-AUC, F1, Brier score, a confusion matrix and weight-derived
-feature importance; where a model has no such metric the API returns null and the panel
-shows a dash rather than a plausible-looking placeholder.
+feature importance. Where a model has no such metric the API returns null and the panel
+shows a dash; nothing is filled in with a plausible-looking placeholder.
 
 ---
 
@@ -345,24 +343,24 @@ python data/mock/check_mocks.py          # fixtures obey the contracts
 
 `src.audit_math` is separate from the tests on purpose. The tests check behaviour, so
 they pass even when a constant is quietly wrong; the audit recomputes every formula from
-the spec text by an independent route and compares — all seven hazard scores, the six
+the spec text by an independent route and compares: all seven hazard scores, the six
 physics models, noisy-OR, the zone rule on its exact boundaries, the log-odds table
 against the spec's own printed log values, survivability, expected lives, the BPR edge
 cost, the POS projection matrix, and Horn slope against an analytic plane.
 
 `src.test_frontend_contract` locks the field names the dashboard reads. Renaming one
-breaks a panel silently — the page still renders and the value shows as undefined — so
-these fail first instead.
+breaks a panel silently: the page still renders and the value shows as undefined. These
+fail first instead.
 
-Two things the audit records rather than smooths over. The landslide formula is not
+Two things the audit records in place. The landslide formula is not
 self-limiting, so the evaluator clamps it. And spec §5.3's claim that thermal + rPPG +
 audio "compounds to P > 0.95" reaches **0.938** at our 0.05 prior; the arithmetic is
 right and the spec's figure is loose. It holds from a prior near 0.06, and §5.3 defines
-the prior per cell rather than as a constant.
+the prior per cell.
 
 ### Modelling errors we caught and fixed
 
-Each of these produced plausible-looking output, which is what made them worth recording:
+Each produced plausible-looking output, which is why they were hard to spot:
 
 - The Noyyal was drawn through ward centroids, putting riverside wards at 0.00 km from
   the river and making the strongest driver of inundation meaningless.
@@ -443,7 +441,7 @@ uncertainty:
 `configs/global.yaml` holds the shared values: the zone rule, noisy-OR parameters,
 green-suitability weights, log-odds likelihood ratios and routing penalties.
 
-Two blocks there are calibration knobs rather than findings, and both say so in place.
+Two blocks there are calibration knobs, and both say so in place.
 The GMPE attenuation coefficients need refitting per region before any absolute PGA is
 trustworthy, and the §4.4 exposure weights have no values in the spec, so they sit at
 equal thirds.
