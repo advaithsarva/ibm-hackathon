@@ -119,7 +119,8 @@ def test_model_metrics():
             ["primary_hazard_model", "secondary_benchmarking_model", "fusion",
              "verification"])
     for key in ("primary_hazard_model", "secondary_benchmarking_model"):
-        require(f"metrics: {key}", m[key], ["name", "dataset", "metrics", "note"])
+        require(f"metrics: {key}", m[key],
+                ["name", "dataset", "metrics", "honest_read", "feature_importance"])
     check("metrics: fusion ratios match the config",
           m["fusion"]["likelihood_ratios"]["radar_vital"] == 25)
 
@@ -183,6 +184,71 @@ def test_radar_is_labelled_simulated():
     check("radar: 512 samples", len(r["signal"]) == 512)
     check("radar: declares itself simulated", r["simulated"] is True)
     check("radar: physiological BPM", 40 <= r["peaks"]["bpm"] <= 180)
+
+
+def test_every_disaster_in_the_dropdown_works():
+    """The UI offers seven hazards. Each must compute, or the dropdown 500s and the page
+    silently falls back to cached data while looking fine."""
+    from backend.main import DISASTER_CONFIG
+    for disaster in DISASTER_CONFIG:
+        z = compute_zones(disaster)
+        check(f"{disaster}: computes 30 wards", len(z["grid_cells"]) == 30)
+        check(f"{disaster}: has a label for the status line",
+              bool(z.get("disaster_label")))
+        check(f"{disaster}: reports the formula it used", bool(z.get("hazard_formula")))
+        xs = [c["X"] for c in z["grid_cells"]]
+        check(f"{disaster}: X stays in [0,1]", all(0.0 <= x <= 1.0 for x in xs))
+        check(f"{disaster}: X varies across wards", max(xs) - min(xs) > 0.01,
+              f"range {min(xs):.3f}-{max(xs):.3f}")
+        p = priority_for(z, disaster)
+        check(f"{disaster}: produces a ranked plan", len(p["ranked"]) > 0)
+        check(f"{disaster}: declares its ranking basis",
+              p.get("ranking_basis") in ("expected_lives_saved", "exposure"))
+        check(f"{disaster}: every row carries equipment",
+              all(r.get("recommended_equipment") for r in p["ranked"]))
+
+
+def test_hazards_without_a_survivability_curve_say_so():
+    """Drought and lightning have no tau in the spec. They must rank by exposure and
+    label it, not silently borrow a constant from another hazard."""
+    for disaster in ("drought", "lightning"):
+        p = priority_for(compute_zones(disaster), disaster)
+        check(f"{disaster}: ranks by exposure", p["ranking_basis"] == "exposure")
+        check(f"{disaster}: explains why", "ranking_note" in p)
+
+
+def test_ward_terrain_feeds_the_xai_panel():
+    """The explainability panel reads these off components; a missing one renders as 0
+    and the bar silently shows nothing."""
+    cell = compute_zones("flood")["grid_cells"][0]
+    require("XAI: terrain components", cell["components"],
+            ["rainfall_24h_mm", "water_depth_m", "twi_index", "elevation_m",
+             "river_dist_km", "slope_deg", "ward_name"])
+    check("XAI: TWI is a real number", isinstance(cell["components"]["twi_index"], float))
+
+
+def test_model_card_carries_measured_numbers_only():
+    """Every figure on the model card must come from a held-out run, and a metric the
+    model does not have must be null rather than a plausible-looking placeholder."""
+    m = model_metrics()
+    check("model card: at least one model built", len(m["all_models"]) > 0)
+    for name, card in m["all_models"].items():
+        require(f"model card {name}", card,
+                ["name", "dataset", "metrics", "feature_importance", "confusion_matrix",
+                 "trained_rows", "validation_rows", "honest_read"])
+        met = card["metrics"]
+        for key in ("accuracy", "precision", "recall", "f1", "roc_auc"):
+            v = met.get(key)
+            check(f"model card {name}: {key} is a real value or null",
+                  v is None or 0.0 <= v <= 1.0, str(v))
+        shares = [f["share"] for f in card["feature_importance"]]
+        check(f"model card {name}: importances sum to 1",
+              abs(sum(shares) - 1.0) < 0.01, f"{sum(shares):.4f}")
+        cm = card["confusion_matrix"]
+        check(f"model card {name}: confusion matrix totals the validation rows",
+              cm["tp"] + cm["fp"] + cm["fn"] + cm["tn"] == card["validation_rows"])
+    check("model card: physics layer is described as unfitted",
+          "no held-out score" in m["physics_layer"]["note"])
 
 
 def test_health():

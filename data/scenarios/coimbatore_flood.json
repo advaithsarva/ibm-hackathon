@@ -31,7 +31,8 @@
           "name": "Coimbatore Medical College Hospital",
           "value": 1.0
         }
-      ]
+      ],
+      "slope_deg": 0.32
     },
     {
       "name": "Gandhipuram",
@@ -53,7 +54,8 @@
           "name": "Gandhipuram Control Room",
           "value": 0.6
         }
-      ]
+      ],
+      "slope_deg": 0.3
     },
     {
       "name": "Peelamedu",
@@ -70,7 +72,8 @@
           "name": "PSG Hospitals",
           "value": 1.0
         }
-      ]
+      ],
+      "slope_deg": 0.3
     },
     {
       "name": "Singanallur",
@@ -93,7 +96,8 @@
           "value": 0.65
         }
       ],
-      "gauge": true
+      "gauge": true,
+      "slope_deg": 0.3
     },
     {
       "name": "Saibaba Colony",
@@ -104,7 +108,8 @@
       "pop": 43700,
       "rain_factor": 0.98,
       "river_dist_km": 4.391,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.39
     },
     {
       "name": "Ganapathy",
@@ -121,7 +126,8 @@
           "name": "Ganapathy 110kV Substation",
           "value": 0.75
         }
-      ]
+      ],
+      "slope_deg": 0.3
     },
     {
       "name": "Ramanathapuram",
@@ -132,7 +138,8 @@
       "pop": 47300,
       "rain_factor": 1.06,
       "river_dist_km": 0.648,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.3
     },
     {
       "name": "Ukkadam",
@@ -150,7 +157,8 @@
           "value": 0.9
         }
       ],
-      "gauge": true
+      "gauge": true,
+      "slope_deg": 0.3
     },
     {
       "name": "Podanur",
@@ -167,7 +175,8 @@
           "name": "Podanur Rail Underbridge",
           "value": 0.9
         }
-      ]
+      ],
+      "slope_deg": 0.3
     },
     {
       "name": "Kuniamuthur",
@@ -178,7 +187,8 @@
       "pop": 31500,
       "rain_factor": 1.02,
       "river_dist_km": 2.477,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.3
     },
     {
       "name": "Vadavalli",
@@ -197,7 +207,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 4000
+      "shelter_capacity": 4000,
+      "slope_deg": 11.5
     },
     {
       "name": "Thudiyalur",
@@ -216,7 +227,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 3500
+      "shelter_capacity": 3500,
+      "slope_deg": 4.5
     },
     {
       "name": "Saravanampatti",
@@ -233,7 +245,8 @@
           "name": "Saravanampatti Fire & Rescue",
           "value": 0.7
         }
-      ]
+      ],
+      "slope_deg": 0.4
     },
     {
       "name": "Kalapatti",
@@ -244,7 +257,8 @@
       "pop": 22700,
       "rain_factor": 1.01,
       "river_dist_km": 5.811,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.34
     },
     {
       "name": "Sulur",
@@ -263,7 +277,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 4500
+      "shelter_capacity": 4500,
+      "slope_deg": 0.3
     },
     {
       "name": "Annur",
@@ -282,7 +297,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 6000
+      "shelter_capacity": 6000,
+      "slope_deg": 0.63
     },
     {
       "name": "Race Course",
@@ -293,7 +309,8 @@
       "pop": 21400,
       "rain_factor": 1.02,
       "river_dist_km": 1.4,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.3
     },
     {
       "name": "Town Hall",
@@ -310,7 +327,8 @@
           "name": "Town Hall Urban PHC",
           "value": 0.6
         }
-      ]
+      ],
+      "slope_deg": 0.3
     },
     {
       "name": "Selvapuram",
@@ -321,7 +339,8 @@
       "pop": 36200,
       "rain_factor": 1.03,
       "river_dist_km": 0.014,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.3
     },
     {
       "name": "Kavundampalayam",
@@ -340,7 +359,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 3800
+      "shelter_capacity": 3800,
+      "slope_deg": 3.5
     },
     {
       "name": "Veerakeralam",
@@ -359,7 +379,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 3000
+      "shelter_capacity": 3000,
+      "slope_deg": 9.0
     },
     {
       "name": "Perur",
@@ -371,7 +392,8 @@
       "rain_factor": 0.97,
       "river_dist_km": 0.471,
       "assets": [],
-      "gauge": true
+      "gauge": true,
+      "slope_deg": 14.0
     },
     {
       "name": "Chinniampalayam",
@@ -382,7 +404,8 @@
       "pop": 24600,
       "rain_factor": 1.04,
       "river_dist_km": 0.561,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.3
     },
     {
       "name": "Vellalore",
@@ -399,7 +422,8 @@
           "name": "Vellalore Sewage Works",
           "value": 0.65
         }
-      ]
+      ],
+      "slope_deg": 0.3
     },
     {
       "name": "Kurichi",
@@ -416,7 +440,8 @@
           "name": "Kurichi PHC",
           "value": 0.6
         }
-      ]
+      ],
+      "slope_deg": 0.3
     },
     {
       "name": "Idigarai",
@@ -435,7 +460,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 2500
+      "shelter_capacity": 2500,
+      "slope_deg": 6.5
     },
     {
       "name": "Onapalayam",
@@ -454,7 +480,8 @@
         }
       ],
       "shelter": true,
-      "shelter_capacity": 2800
+      "shelter_capacity": 2800,
+      "slope_deg": 16.0
     },
     {
       "name": "Madukkarai",
@@ -465,7 +492,8 @@
       "pop": 23100,
       "rain_factor": 1.0,
       "river_dist_km": 8.74,
-      "assets": []
+      "assets": [],
+      "slope_deg": 12.5
     },
     {
       "name": "Irugur",
@@ -477,7 +505,8 @@
       "rain_factor": 1.07,
       "river_dist_km": 0.807,
       "assets": [],
-      "gauge": true
+      "gauge": true,
+      "slope_deg": 0.3
     },
     {
       "name": "Neelambur",
@@ -488,7 +517,8 @@
       "pop": 18900,
       "rain_factor": 1.01,
       "river_dist_km": 3.227,
-      "assets": []
+      "assets": [],
+      "slope_deg": 0.3
     }
   ],
   "centre": [
@@ -498,6 +528,45 @@
   "evacuation_policy": {
     "trigger_depth_m": 0.5,
     "evacuation_rate": 0.08,
-    "note": "Only wards with standing water at or above the trigger are evacuated, and at the share of residents a district actually moves to relief centres. Evacuating a third of every at-risk ward is not a plan, it is a number larger than the shelter system."
+    "note": "Only wards with standing water at or above the trigger are evacuated, and at the share of residents a district actually moves to relief centres. Evacuating a third of every at-risk ward is not a plan, it is a number larger than the shelter system. For hazards that do not produce standing water, the trigger is the hazard score itself.",
+    "trigger_hazard_x": 0.75
+  },
+  "events": {
+    "earthquake": {
+      "magnitude_mw": 6.4,
+      "epicentre": [
+        11.05,
+        76.82
+      ],
+      "depth_km": 12.0,
+      "note": "Moderate event on the western margin, for the config-swap demo"
+    },
+    "cyclone": {
+      "central_pressure_hpa": 962.0,
+      "ambient_pressure_hpa": 1008.0,
+      "rmw_km": 35.0,
+      "b": 1.4,
+      "centre": [
+        10.8,
+        77.35
+      ],
+      "note": "Bay of Bengal landfall tracking inland past Sulur"
+    },
+    "landslide": {
+      "r3d_multiplier": 1.8,
+      "note": "Three-day accumulation from the same monsoon"
+    },
+    "drought": {
+      "smi_base": 0.42,
+      "note": "Post-monsoon soil moisture index"
+    },
+    "wildfire": {
+      "fwi_base": 24.0,
+      "note": "Dry-season fire weather index"
+    },
+    "lightning": {
+      "cape_base": 2100.0,
+      "note": "Convective available potential energy"
+    }
   }
 }

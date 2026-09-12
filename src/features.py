@@ -513,6 +513,27 @@ def logistic_baseline(name, epochs=400, lr=0.5, l2=1e-4, out_dir=OUT):
         grad = Xtr.T @ (p - ytr) / len(ytr) + l2 * w
         w -= lr * grad
 
+    def roc_auc(scores, y):
+        """Mann-Whitney form: the probability a random positive outranks a random
+        negative. Ties count half, which matters on a saturated classifier."""
+        pos, neg = scores[y == 1], scores[y == 0]
+        if len(pos) == 0 or len(neg) == 0:
+            return None
+        order = np.argsort(scores)
+        ranks = np.empty(len(scores), float)
+        ranks[order] = np.arange(1, len(scores) + 1)
+        # average ranks within ties
+        _vals, inv, counts = np.unique(scores, return_inverse=True, return_counts=True)
+        sums = np.bincount(inv, weights=ranks)
+        ranks = (sums / counts)[inv]
+        return float((ranks[y == 1].sum() - len(pos) * (len(pos) + 1) / 2)
+                     / (len(pos) * len(neg)))
+
+    def brier(scores, y):
+        """Mean squared error of the probabilities. Lower is better; a model that is
+        confidently wrong is punished where accuracy would not notice."""
+        return float(np.mean((scores - y) ** 2))
+
     def metrics(X, y):
         p = 1 / (1 + np.exp(-np.clip(X @ w, -30, 30)))
         pred = (p >= 0.5).astype(int)
@@ -522,12 +543,28 @@ def logistic_baseline(name, epochs=400, lr=0.5, l2=1e-4, out_dir=OUT):
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
         f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+        tn = int(((pred == 0) & (y == 0)).sum())
         return {"accuracy": float((pred == y).mean()), "precision": precision,
-                "recall": recall, "f1": f1}
+                "recall": recall, "f1": f1,
+                "roc_auc": roc_auc(p, y), "brier": round(brier(p, y), 5),
+                "confusion": {"tp": tp, "fp": fp, "fn": fn, "tn": tn},
+                "n": int(len(y))}
+
+    names = json.loads((d / "metadata.json").read_text())["feature_names"]
+    weights = dict(zip(names + ["bias"], w.round(4).tolist()))
+
+    # Feature importance as a share of total absolute weight, excluding the bias. On
+    # standardised inputs the coefficients are directly comparable, which is the whole
+    # reason the scaler runs before this.
+    total = sum(abs(v) for k, v in weights.items() if k != "bias") or 1.0
+    importance = sorted(
+        ({"feature": k, "weight": v, "share": round(abs(v) / total, 4),
+          "direction": "increases risk" if v > 0 else "reduces risk"}
+         for k, v in weights.items() if k != "bias"),
+        key=lambda r: -r["share"])
 
     return {"train": metrics(Xtr, ytr), "val": metrics(Xva, yva),
-            "weights": dict(zip(json.loads((d / "metadata.json").read_text())
-                                ["feature_names"] + ["bias"], w.round(4).tolist()))}
+            "weights": weights, "feature_importance": importance}
 
 
 def _cli():

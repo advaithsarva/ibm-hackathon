@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Sentinel Grid — Disaster Intelligence & Emergency Response</title>
+  <meta name="description" content="AI-powered disaster early warning, hazard zone mapping, rescue prioritization and evacuation routing for Coimbatore District, Tamil Nadu."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css"/>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo-group">
+      <div class="logo-icon">⬡</div>
+      <div class="logo-text">
+        <span class="logo-title">SENTINEL GRID</span>
+        <span class="logo-sub">Disaster Intelligence Platform</span>
+      </div>
+    </div>
+  </div>
+  <div class="topbar-center">
+    <div class="alert-banner" id="alertBanner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 14px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="pulse-dot red-pulse"></span>
+        <span id="alertText" style="font-weight:700">Threat assessment active</span>
+      </div>
+      <div style="font-size:9.5px;color:#93c5fd;font-family:'JetBrains Mono',monospace" id="imdLiveStatus">
+        📡 Live Source: IMD Coimbatore Observatory (Station 43321) · Cumulative: 629.9mm
+      </div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="disaster-select-wrap">
+      <label>Scenario</label>
+      <select id="disasterSelect" onchange="changeDisaster(this.value)">
+        <option value="flood" selected>🌊 Coimbatore Flood</option>
+        <option value="earthquake">🏚 Earthquake (Sim)</option>
+        <option value="cyclone">🌀 Cyclone (Sim)</option>
+        <option value="landslide">⛰ Landslide (Sim)</option>
+            <option value="drought">🏜 Drought (Sim)</option>
+            <option value="wildfire">🔥 Forest Fire (Sim)</option>
+            <option value="lightning">⚡ Lightning (Sim)</option>
+      </select>
+    </div>
+    <div class="live-clock" id="liveClock"></div>
+    <div class="ibm-badge">IBM Technology Expert Labs</div>
+  </div>
+</header>
+
+<!-- ── KPI STRIP ── -->
+<section class="kpi-strip">
+  <div class="kpi-card"><span class="kpi-icon">🔴</span><div class="kpi-data"><span class="kpi-num" id="kpiRedNum">—</span><span class="kpi-label">Critical Zones</span></div></div>
+  <div class="kpi-card"><span class="kpi-icon">🔵</span><div class="kpi-data"><span class="kpi-num" id="kpiBlueNum">—</span><span class="kpi-label">Uncertain Zones</span></div></div>
+  <div class="kpi-card"><span class="kpi-icon">🟢</span><div class="kpi-data"><span class="kpi-num" id="kpiGreenNum">—</span><span class="kpi-label">Safe Zones</span></div></div>
+  <div class="kpi-card"><span class="kpi-icon">👥</span><div class="kpi-data"><span class="kpi-num" id="kpiPop">—</span><span class="kpi-label">At-Risk Population</span></div></div>
+  <div class="kpi-card"><span class="kpi-icon">📡</span><div class="kpi-data"><span class="kpi-num" id="kpiDetected">—</span><span class="kpi-label">Survivors Detected</span></div></div>
+  <div class="kpi-card"><span class="kpi-icon">🚁</span><div class="kpi-data"><span class="kpi-num" id="kpiDispatched">—</span><span class="kpi-label">Teams Dispatched</span></div></div>
+</section>
+
+<!-- ── MAIN GRID ── -->
+<main class="main-grid">
+  <!-- Map Panel -->
+  <section class="panel panel-map">
+    <div class="panel-header">
+      <h2>🗺 Hazard Zone Map — Coimbatore District, Tamil Nadu</h2>
+      <div class="map-legend">
+        <span class="legend-item"><span class="dot red-dot"></span>RED — Critical</span>
+        <span class="legend-item"><span class="dot blue-dot"></span>BLUE — Uncertain</span>
+        <span class="legend-item"><span class="dot green-dot"></span>GREEN — Safe</span>
+      </div>
+      <div class="mandate-nav" style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="mandate-btn active" id="mBtn1" onclick="focusMandate(1)" style="background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;border-radius:6px;padding:4px 8px;font-size:10.5px;font-weight:800;cursor:pointer">1. 🗺 WHERE Risk</button>
+        <button class="mandate-btn" id="mBtn2" onclick="focusMandate(2)" style="background:#0f172a;color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:4px 8px;font-size:10.5px;font-weight:800;cursor:pointer">2. 👥 WHO & WHAT</button>
+        <button class="mandate-btn" id="mBtn3" onclick="focusMandate(3)" style="background:#0f172a;color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:4px 8px;font-size:10.5px;font-weight:800;cursor:pointer">3. ⚡ WHICH First</button>
+        <button class="mandate-btn" id="mBtn4" onclick="focusMandate(4)" style="background:#0f172a;color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:4px 8px;font-size:10.5px;font-weight:800;cursor:pointer">4. 🚶 SAFEST Route</button>
+      </div>
+    </div>
+    
+    <!-- ── 24-48H STORM SIMULATOR BAR ── -->
+    <div class="simulation-bar" style="background:#0c1729;border-bottom:1px solid #1e3a5f;padding:8px 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:#60a5fa;font-weight:700">🌧️ IMD Rainfall:</span>
+        <input type="range" id="simRain" min="0.4" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('simRainVal').textContent = (this.value*100).toFixed(0)+'%'; runSimulation()" style="width:90px;cursor:pointer">
+        <span id="simRainVal" style="font-family:'JetBrains Mono',monospace;color:#f8fafc;width:38px">100%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:#38bdf8;font-weight:700">🌊 Noyyal Gauge:</span>
+        <input type="range" id="simRiver" min="2.0" max="6.5" step="0.2" value="3.6" oninput="document.getElementById('simRiverVal').textContent = this.value+'m'; runSimulation()" style="width:90px;cursor:pointer">
+        <span id="simRiverVal" style="font-family:'JetBrains Mono',monospace;color:#f8fafc;width:35px">3.6m</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:#c084fc;font-weight:700">🛰️ SAR Delay:</span>
+        <select id="simSar" onchange="runSimulation()" style="background:#111d33;color:#e2e8f0;border:1px solid #274068;border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer">
+          <option value="2.0">2h (Fresh Pass)</option>
+          <option value="5.0" selected>5h (Moderate)</option>
+          <option value="14.0">14h (High Epistemic U)</option>
+          <option value="22.0">22h (Sensor Blackout)</option>
+        </select>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button onclick="openIncidentActionPlan()" style="background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:10.5px;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(2,132,199,0.3)">📋 Export NDRF Action Plan</button>
+      </div>
+    </div>
+
+    <div id="map"></div>
+    <div class="map-footer">
+      <span id="mapStatus">Loading flood scenario...</span>
+      <span id="cellCount"></span>
+    </div>
+  </section>
+
+  <!-- Right Panel -->
+  <section class="panel panel-right">
+    <div class="tabs">
+      <button class="tab active" id="tab-triage" onclick="switchTab('triage')">⚡ Rescue Triage</button>
+      <button class="tab" id="tab-evacuation" onclick="switchTab('evacuation')">🚶 Evacuation</button>
+      <button class="tab" id="tab-sensors" onclick="switchTab('sensors')">📡 Bio-Radar</button>
+      <button class="tab" id="tab-xai" onclick="switchTab('xai')">🔬 XAI</button>
+      <button class="tab" id="tab-models" onclick="switchTab('models')">🧠 ML Models</button>
+    </div>
+
+    <!-- TRIAGE -->
+    <div class="tab-content active" id="content-triage">
+      <div class="tab-scroll">
+        <div class="section-label">Dispatch Priority Queue — Ranked by Π (Expected Lives Saved)</div>
+        <div id="triageList" class="triage-list"></div>
+      </div>
+    </div>
+
+    <!-- EVACUATION -->
+    <div class="tab-content" id="content-evacuation">
+      <div class="tab-scroll">
+        <div class="section-label">Safe Zone Shelters — Min-Cost Flow Assignment</div>
+        <div id="shelterList"></div>
+        <div class="section-label" style="margin-top:14px">Active Evacuation Flows</div>
+        <div id="flowList"></div>
+      </div>
+    </div>
+
+    <!-- BIO-RADAR -->
+    <div class="tab-content" id="content-sensors">
+      <div class="tab-scroll">
+        <div class="section-label">Multi-Modal Survivor Detection (Drone + Bio-Radar)</div>
+        <div id="detectionList" class="detection-list"></div>
+        <div class="radar-section">
+          <div class="section-label">Live Bio-Radar Vital Signal — UWB Doppler Penetration</div>
+          <div class="radar-info">
+            <span class="radar-status" id="radarStatus">● SCANNING FOR VITALS...</span>
+            <span class="radar-bpm" id="radarBpm">-- bpm</span>
+          </div>
+          <canvas id="radarCanvas" width="380" height="100"></canvas>
+          <div class="radar-legend-row">
+            <span class="radar-chip breathing">● Respiration Peak: 0.20 Hz</span>
+            <span class="radar-chip heartbeat">● Cardiac Peak: ~1.25 Hz</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- XAI -->
+    <div class="tab-content" id="content-xai">
+      <div class="tab-scroll">
+        <div class="section-label">Explainable AI — Zone Decision Breakdown (SHAP)</div>
+        <div class="xai-select-row">
+          <label>Inspect ward:</label>
+          <select id="xaiCellSelect" onchange="renderXAI()">
+            <option value="">Select a zone cell...</option>
+          </select>
+        </div>
+        <div id="xaiOutput" class="xai-output"></div>
+      </div>
+    </div>
+
+    <!-- ML MODELS & BENCHMARKS -->
+    <div class="tab-content" id="content-models">
+      <div class="tab-scroll">
+        <div class="section-label">Trained ML Intelligence Architecture & Verifiable Benchmarks</div>
+        <div id="modelsOutput" class="models-output">
+          <div style="text-align:center; padding:20px; color:#94a3b8;">Loading model metrics from API...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ── FOOTER ── -->
+<footer class="info-bar">
+  <span>📍 Coimbatore District, Tamil Nadu — Noyyal River Basin Flood Event</span>
+  <span>📊 Data: IMD Rainfall · CWC Gauge · OSM Road Network · WorldPop · Sentinel-1 SAR</span>
+  <span>🤖 Models: Physics-Guided XGBoost · Noisy-OR Uncertainty · Hazard-Penalised A* · Min-Cost Flow</span>
+  <span>🏆 IBM BOB National Hackathon Finals 2026 — Team 029 · PS-01</span>
+</footer>
+
+<!-- ── INCIDENT ACTION PLAN (IAP) MODAL ── -->
+<div id="iapModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(2,6,23,0.85);z-index:9999;backdrop-filter:blur(6px);align-items:center;justify-content:center">
+  <div style="background:#0f172a;border:1px solid #38bdf8;border-radius:12px;width:90%;max-width:850px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8)">
+    <div style="padding:16px 20px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">📋</span>
+        <div>
+          <h3 style="margin:0;font-size:15px;color:#f8fafc">NATIONAL DISASTER RESPONSE FORCE — INCIDENT ACTION PLAN (IAP)</h3>
+          <span style="font-size:11px;color:#94a3b8">OPERATION NOYYAL SENTINEL 2026 · COIMBATORE COMMAND CENTER</span>
+        </div>
+      </div>
+      <button onclick="closeIncidentActionPlan()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer">&times;</button>
+    </div>
+    <div id="iapModalBody" style="padding:20px;overflow-y:auto;font-size:12px;color:#cbd5e1;line-height:1.6">
+      Loading official action plan...
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;background:#090d16">
+      <span style="font-size:11px;color:#64748b">Verified by NDRF Incident Command System (ICS Form 202/204 Compliant)</span>
+      <button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🖨️ Print / Save PDF</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

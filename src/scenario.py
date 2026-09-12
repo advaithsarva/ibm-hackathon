@@ -101,7 +101,85 @@ def load_scenario(name):
     return scenario
 
 
-def build_cells(scenario, river_stage_m=None, rainfall_scale=1.0, sar_staleness_h=None):
+def slope_deg_for(ward):
+    """Ground slope in degrees, from the scenario if it carries one.
+
+    The fallback derives slope from relief spread over a ward roughly 2 km across. An
+    earlier version read 22 m of relief as a 37 degree slope, which is a cliff; over 2 km
+    it is well under one degree. Coimbatore is a plateau, and the only real slope is the
+    Western Ghats margin on its western edge, so those wards carry a measured value.
+    """
+    if "slope_deg" in ward:
+        return ward["slope_deg"]
+    return round(max(0.3, ward["relief_m"] / 2000.0 * 57.3), 2)
+
+
+def topographic_wetness_index(ward):
+    """TWI = ln(a / tan(beta)): where water collects.
+
+    `a` is the upslope area draining through a point, approximated here from local
+    relief, since a ward on the floodplain drains a far larger catchment than one on a
+    ridge. High TWI is flat low ground that water runs into and does not leave, which is
+    exactly where urban flooding shows up first.
+    """
+    a = 120.0 / (ward["relief_m"] + 1.0)
+    beta = math.radians(max(0.6, slope_deg_for(ward)))
+    return round(math.log(a / math.tan(beta)), 3)
+
+
+def hazard_inputs_for(disaster, ward, r24, depth, retention, events):
+    """The inputs each disaster's formula declares, derived for one ward.
+
+    One ward model, several hazards. Each uses the physics already in
+    src/hazard/physics.py rather than a second set of constants: the earthquake path
+    runs the GMPE, the cyclone path runs the Holland wind field.
+    """
+    from src.hazard.physics import amplify_vs30, gmpe_pga, holland_wind
+
+    if disaster in ("flood", "flood_rainfall"):
+        return {"r24_mm": round(r24 * retention + depth * 64.0, 1)}
+
+    if disaster == "landslide":
+        event = events.get("landslide", {})
+        return {"r3d_mm": round(r24 * event.get("r3d_multiplier", 2.2), 1),
+                "slope_deg": slope_deg_for(ward)}
+
+    if disaster == "earthquake":
+        event = events["earthquake"]
+        distance = haversine_km((ward["lat"], ward["lon"]), event["epicentre"])
+        pga = gmpe_pga(event["magnitude_mw"], distance, event["depth_km"])
+        # Soft floodplain soil amplifies; the ridge wards sit closer to rock.
+        vs30 = 200.0 + ward["relief_m"] * 22.0
+        return {"pga_ms2": round(amplify_vs30(pga, vs30), 4)}
+
+    if disaster == "cyclone":
+        event = events["cyclone"]
+        distance = max(1.0, haversine_km((ward["lat"], ward["lon"]), event["centre"]))
+        wind_ms = holland_wind(distance, event["central_pressure_hpa"],
+                               event["ambient_pressure_hpa"], event["rmw_km"],
+                               event.get("b", 1.4))
+        return {"wind_kmh": round(wind_ms * 3.6, 1)}
+
+    if disaster == "drought":
+        event = events["drought"]
+        # Well-drained high ground dries out first; the floodplain holds moisture.
+        smi = event["smi_base"] * (0.6 + 0.8 * retention)
+        return {"smi": round(min(1.0, max(0.0, smi)), 4)}
+
+    if disaster == "wildfire":
+        event = events["wildfire"]
+        # Fire weather rises where water does not linger, so it tracks 1 - retention.
+        return {"fwi": round(event["fwi_base"] * (0.5 + 1.0 * (1.0 - retention)), 2)}
+
+    if disaster == "lightning":
+        event = events["lightning"]
+        return {"cape_j_kg": round(event["cape_base"] * ward.get("rain_factor", 1.0), 1)}
+
+    raise ValueError(f"no hazard inputs defined for disaster {disaster!r}")
+
+
+def build_cells(scenario, river_stage_m=None, rainfall_scale=1.0, sar_staleness_h=None,
+                disaster="flood"):
     """Scenario + storm state -> cell inputs for the zone engine.
 
     river_stage_m, rainfall_scale and sar_staleness_h are the three simulation controls
@@ -160,7 +238,8 @@ def build_cells(scenario, river_stage_m=None, rainfall_scale=1.0, sar_staleness_
             "cell_id": cell_id(ward["lat"], ward["lon"]),
             "ward_name": ward["name"],
             "centroid": [ward["lat"], ward["lon"]],
-            "hazard_inputs": {"r24_mm": effective_mm},
+            "hazard_inputs": hazard_inputs_for(disaster, ward, r24, depth, retention,
+                                               scenario.get("events", {})),
             "sensors": {"sigma_ens": round(sigma, 5),
                         "data_age_hours": round(age_h, 3),
                         "area_sensed_fraction": sensed},
@@ -183,6 +262,8 @@ def build_cells(scenario, river_stage_m=None, rainfall_scale=1.0, sar_staleness_
                 "elevation_m": ward["elevation_m"],
                 "relief_m": ward["relief_m"],
                 "river_dist_km": ward["river_dist_km"],
+                "slope_deg": slope_deg_for(ward),
+                "twi_index": topographic_wetness_index(ward),
                 "travel_from_centre_km": round(travel_km, 2),
                 "rainfall_24h_mm": r24,
                 "effective_rainfall_mm": effective_mm,
