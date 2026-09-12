@@ -186,6 +186,43 @@ Four of the seven are historical event catalogues rather than current conditions
 the right input for base rates, validation and training, and the wrong input for "what is
 happening right now" — that still needs a live feed.
 
+## Preprocessing for the ML layer
+
+`src/features.py` turns a raw dataset into arrays a model loads in two lines:
+
+```bash
+python -m src.features --profile landslide    # what is in it, before spending GPU time
+python -m src.features --build-all            # write model-ready arrays
+python -m src.features --baseline landslide   # what a trivial model already scores
+```
+
+```python
+d = np.load("data/cache/features/landslide/train.npz")
+X, y = d["X"], d["y"]
+```
+
+Standardisation is fitted on the training rows only, one-hot columns are left unscaled,
+and the split is stratified. Each build writes a `metadata.json` carrying the feature
+names, the scaler statistics, the class balance and each feature's point-biserial
+correlation with the target.
+
+Three findings came out of running it, and all three change what is worth training:
+
+**The cyclone file leaks its own target.** `Pre_existing_Disturbance` is identical to the
+`Cyclone` label in all 2000 rows, so a one-column model scores 100% and learns nothing.
+It is excluded, and `check_leakage()` now refuses to build any feature set containing a
+column correlated with the target above r = 0.99.
+
+**Both feature tables are near-trivially separable.** Plain logistic regression, one
+second on a CPU, scores **1.0000** on landslide and **0.9975** on cyclone. A shuffled-label
+control collapses to 0.50 and 0.53, so the baseline is sound and the data really is that
+easy. Training anything heavier on these two overnight buys nothing — the GPU time
+belongs on flood segmentation, which uses real Sen1Floods11 imagery.
+
+**478 of 2000 landslide rows have every soil indicator at zero.** That is a dropped
+reference category, not missing data. Imputing it or adding a fourth column reintroduces
+the dummy trap.
+
 ## API
 
 Four contracts frozen early so the dashboard could be built before any engine existed,

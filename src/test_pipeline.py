@@ -218,6 +218,74 @@ def test_every_disaster_config_declares_its_dataset_columns():
             assert field in block["columns"] or (name, field) in DERIVATIONS,                 f"{name}: hazard input {field!r} is neither mapped nor derivable"
 
 
+# --- preprocessing ----------------------------------------------------------------
+
+def test_scaler_is_fitted_on_training_rows_only():
+    """Fitting before the split leaks validation statistics and inflates every score."""
+    from src.features import apply_scaler, fit_scaler
+    rng = np.random.default_rng(0)
+    X = np.hstack([rng.normal(5, 2, (200, 3)), rng.integers(0, 2, (200, 2))])
+    train, val = X[:150], X[150:]
+
+    mean, std = fit_scaler(train, 3)
+    scaled_train = apply_scaler(train, mean, std, 3)
+    scaled_val = apply_scaler(val, mean, std, 3)
+
+    assert abs(scaled_train[:, :3].mean()) < 1e-12, "train must standardise to zero mean"
+    assert abs(scaled_train[:, :3].std() - 1.0) < 1e-9
+    # Val is scaled by the train statistics, so its mean must NOT be exactly zero.
+    assert abs(scaled_val[:, :3].mean()) > 1e-9, "val mean of 0 means the scaler saw it"
+    # Binary columns pass through untouched.
+    assert set(np.unique(scaled_train[:, 3:]).tolist()) <= {0.0, 1.0}
+
+
+def test_zero_variance_column_does_not_divide_by_zero():
+    from src.features import apply_scaler, fit_scaler
+    X = np.hstack([np.full((50, 1), 7.0), np.arange(50).reshape(-1, 1).astype(float)])
+    mean, std = fit_scaler(X, 2)
+    out = apply_scaler(X, mean, std, 2)
+    assert np.isfinite(out).all(), "a constant column must not produce NaN"
+
+
+def test_split_is_stratified():
+    from src.features import stratified_split
+    y = np.array([0] * 180 + [1] * 20)          # deliberately imbalanced
+    train, val = stratified_split(y, 0.2, seed=0)
+    assert len(train) + len(val) == len(y)
+    assert len(set(train.tolist()) & set(val.tolist())) == 0, "splits must not overlap"
+    val_ratio = y[val].mean()
+    assert abs(val_ratio - 0.10) < 0.03, f"class ratio drifted to {val_ratio}"
+
+
+def test_leakage_guard_catches_a_copied_target():
+    """The cyclone file shipped a column identical to its own target."""
+    from src.features import check_leakage
+    y = np.array([0, 1] * 50)
+    leaked = y.astype(float)
+    honest = np.arange(100, dtype=float)
+    flagged = check_leakage(np.column_stack([honest, leaked]), y, ["honest", "leaked"])
+    assert [f for f, _r in flagged] == ["leaked"]
+    assert abs(flagged[0][1]) >= 0.99
+
+
+def test_build_refuses_to_write_a_leaked_feature_set():
+    from src.features import SCHEMAS, build
+    # The real cyclone schema must already exclude the leaked column.
+    assert "Pre_existing_Disturbance" in SCHEMAS["cyclone"].get("excluded", {})
+    assert "Pre_existing_Disturbance" not in SCHEMAS["cyclone"]["binary"]
+    assert "Pre_existing_Disturbance" not in SCHEMAS["cyclone"]["continuous"]
+
+
+def test_point_biserial_matches_a_hand_computation():
+    from src.features import point_biserial
+    x = np.array([1.0, 2.0, 3.0, 4.0])
+    y = np.array([0, 0, 1, 1])
+    g1, g0 = x[y == 1], x[y == 0]
+    expected = (g1.mean() - g0.mean()) / x.std() * math.sqrt(2 * 2 / 16)
+    assert abs(point_biserial(x, y) - expected) < 1e-12
+    assert point_biserial(np.ones(10), np.array([0, 1] * 5)) == 0.0, "no variance, no r"
+
+
 # --- priority --------------------------------------------------------------------
 
 def test_survivability_decays_on_the_spec_constants():
