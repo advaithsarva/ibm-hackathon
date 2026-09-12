@@ -158,7 +158,8 @@ One per hazard config, registered in `src/ingest/kaggle_sets.py`:
 python -m src.ingest.kaggle_sets --list                 # what is downloaded
 python -m src.ingest.kaggle_sets --inspect earthquake   # what columns the file really has
 python -m src.ingest.kaggle_sets --load earthquake -o data/cache/cell_inputs.eq.json
-python -m src.hazard.zones --config configs/disasters/earthquake.yaml     --cells data/cache/cell_inputs.eq.json -o data/cache/zones.eq.json
+python -m src.hazard.zones --config configs/disasters/earthquake.yaml \
+    --cells data/cache/cell_inputs.eq.json -o data/cache/zones.eq.json
 ```
 
 Nothing hardcodes a schema. Each disaster config carries a `dataset.columns` block of
