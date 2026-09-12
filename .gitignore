@@ -1,0 +1,42 @@
+# local agent instructions
+CLAUDE.md
+.claude/
+
+# secrets
+.env
+*.key
+
+# data — pre-downloaded per machine, never committed (spec §9.4)
+data/raw/
+data/cache/
+*.tif
+*.tiff
+*.geotiff
+*.h5
+*.nc
+
+# model weights
+*.pt
+*.pth
+*.onnx
+*.gguf
+*.pkl
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# node (dashboard)
+node_modules/
+dist/
+.vite/
+
+# os
+.DS_Store
+Thumbs.db
