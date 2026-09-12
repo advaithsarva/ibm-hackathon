@@ -6,9 +6,6 @@ CLAUDE.md
 .env
 *.key
 
-# data — pre-downloaded per machine, never committed (spec §9.4)
-data/raw/
-data/cache/
 *.tif
 *.tiff
 *.geotiff
@@ -41,6 +38,15 @@ dist/
 .DS_Store
 Thumbs.db
 
-# real data exports: large, and each laptop fetches its own
-data/raw/imd/
-data/raw/ibtracs/
+# Data. Everything under data/raw is excluded by default, then the small Kaggle sets
+# are re-included so the repo is reproducible. Git cannot re-include a file whose parent
+# directory is excluded, which is why this excludes data/raw/* rather than data/raw/.
+data/cache/
+data/raw/*
+!data/raw/kaggle/
+data/raw/kaggle/*/*.zip
+
+# lightning is 2.8 GB of parquet: over GitHub's 100 MB per-file limit and unreadable by
+# the CSV loader. Download it on the machine that needs it.
+data/raw/kaggle/lightning/
+*.parquet

@@ -17,6 +17,7 @@ did not, so the fix is obvious rather than a guess.
 import argparse
 import csv
 import json
+import re
 import pathlib
 import sys
 
@@ -26,45 +27,62 @@ from src.hazard.formulas import REPO_ROOT, load_config
 RAW = REPO_ROOT / "data" / "raw" / "kaggle"
 
 # disaster config name -> Kaggle slug and the file we expect inside the zip
+# What each file actually turned out to contain, checked against the download rather
+# than assumed from the title. `griddable` is the one that matters: a dataset with no
+# coordinates cannot place hazard on a map, however good it is for training a classifier.
 DATASETS = {
-    "cyclone": {
-        "slug": "rajumavinmar/cyclone-dataset",
+    "earthquake": {
+        "slug": "ankitd7752/indian-subcontinent-earthquake-data-2000-to-2024",
         "kind": "event_catalog",
-        "what": "Cyclone tracks and intensities",
+        "griddable": True,
+        "what": "USGS-format catalogue: time, latitude, longitude, depth, mag",
+        "note": "Works end to end. PGA is derived from magnitude and depth.",
     },
     "drought": {
         "slug": "kevinmathewsgeorge/india-drought-analysis-data-2000-2023",
         "kind": "observation",
-        "what": "Drought indices 2000-2023",
+        "griddable": False,
+        "what": "GLDAS groundwater by district: date, ADM2_NAME, mean, source",
+        "note": "Named districts, no coordinates. Join to a district centroid table first.",
     },
-    "earthquake": {
-        "slug": "ankitd7752/indian-subcontinent-earthquake-data-2000-to-2024",
-        "kind": "event_catalog",
-        "what": "Indian subcontinent earthquakes 2000-2024",
+    "flood_rainfall": {
+        "slug": "aksahaha/rainfall-india",
+        "kind": "observation",
+        "griddable": False,
+        "what": "Seasonal totals by subdivision: subdivision, YEAR, JUN, JUL, AUG, SEP",
+        "note": ("Monsoon-season totals, not daily, and no coordinates. The IMD 0.25 "
+                 "degree .grd read by src/ingest/imd_grid.py is the better source for "
+                 "the same job and is already wired."),
+    },
+    "cyclone": {
+        "slug": "rajumavinmar/cyclone-dataset",
+        "kind": "feature_table",
+        "griddable": False,
+        "what": "Formation features with a binary Cyclone label; Latitude but no longitude",
+        "note": "A classifier training set, not tracks. Cannot be placed on the grid.",
     },
     "landslide": {
         "slug": "rajumavinmar/landslide-dataset",
-        "kind": "event_catalog",
-        "what": "Landslide events",
+        "kind": "feature_table",
+        "griddable": False,
+        "what": "Rainfall_mm, Slope_Angle, Soil_Saturation and a binary Landslide label",
+        "note": ("No coordinates and no dates. Good for training a susceptibility model, "
+                 "which is exactly what the spec's XGBoost layer would use."),
+    },
+    "wildfire": {
+        "slug": "jaynadkarni/indian-forest-fires-dataset",
+        "kind": "aggregate",
+        "griddable": False,
+        "what": "State-level annual fire counts for 2008-09 through 2010-11",
+        "note": "Three years of state totals. Base rates only; NASA FIRMS is the live feed.",
     },
     "lightning": {
         "slug": "shhhantanu/lightning-event-records-for-india-20192022",
         "kind": "event_catalog",
-        "what": "Lightning strike records 2019-2022",
-    },
-    # The rainfall file maps to flood_rainfall, not flood. flood.yaml needs river
-    # discharge, this dataset has none, and deriving discharge from rainfall through an
-    # invented rating coefficient is precisely the guesswork flood_rainfall exists to
-    # avoid. Point flood.yaml at a CWC gauge export when one arrives.
-    "flood_rainfall": {
-        "slug": "aksahaha/rainfall-india",
-        "kind": "observation",
-        "what": "Indian rainfall records, the driver for the PS-1 monsoon scenario",
-    },
-    "wildfire": {
-        "slug": "jaynadkarni/indian-forest-fires-dataset",
-        "kind": "event_catalog",
-        "what": "Indian forest fire records",
+        "griddable": None,
+        "what": "Parquet strike records, 2.8 GB unpacked",
+        "note": ("Too large for the repo and stored as parquet, which this loader does "
+                 "not read. Kept out of git; download it on the machine that needs it."),
     },
 }
 
@@ -99,6 +117,11 @@ DERIVATIONS = {
 }
 
 
+def _tokens(name):
+    """Column name -> lowercase word tokens. "Focal Depth (km)" -> focal, depth, km."""
+    return [t for t in re.split(r"[^a-z0-9]+", name.lower()) if t]
+
+
 def dataset_dir(name):
     return RAW / name
 
@@ -125,18 +148,27 @@ def read_header(path):
 def resolve_columns(header, wanted):
     """{field: [aliases]} against a real header -> ({field: column}, [unresolved]).
 
-    Exact case-insensitive match first, then substring, because these files use names
-    like "ACTUAL (mm)" and "Magnitude (Mw)" that no exact alias list will ever cover.
+    Exact case-insensitive match first, then a whole-token match, so "Magnitude (Mw)"
+    resolves to magnitude and "Focal Depth (km)" to depth.
+
+    Matching is on whole tokens, never bare substrings. A substring rule looks harmless
+    and is not: against these seven files the alias "y" matches YEAR, "x" matches
+    Proximity_to_Water, and "lon" matches Cyclone. Each silently binds a column of
+    unrelated numbers to a coordinate and puts the hazard somewhere it never happened,
+    which is far worse than reporting the column as unresolved.
     """
     lowered = {h.lower().strip(): h for h in header}
+    tokenised = [(h, set(_tokens(h))) for h in header]
     resolved, unresolved = {}, []
 
     for field, aliases in wanted.items():
         match = next((lowered[a.lower()] for a in aliases if a.lower() in lowered), None)
         if match is None:
             for alias in aliases:
-                a = alias.lower()
-                match = next((orig for low, orig in lowered.items() if a in low), None)
+                alias_tokens = set(_tokens(alias))
+                if not alias_tokens:
+                    continue
+                match = next((h for h, toks in tokenised if alias_tokens <= toks), None)
                 if match:
                     break
         if match:
@@ -234,9 +266,16 @@ def to_cell_inputs(name, records, top_n=40, default_sensed=0.95, age_hours=3.0):
             f"Add their column names to dataset.columns, or join this dataset to a "
             f"district centroid table first.")
 
-    ranked = sorted(placed, key=lambda r: -max(
-        (v for k, v in r.items() if k in required and isinstance(v, (int, float))),
-        default=0.0))[:top_n]
+    # Prefer the most recent events. Ranking by hazard instead selects only the largest
+    # ones, and for an earthquake catalogue every large event saturates X at 1.0 directly
+    # above its hypocentre, so the map comes out uniformly red and says nothing.
+    dated = [r for r in placed if isinstance(r.get("date"), str) and r["date"].strip()]
+    if len(dated) >= top_n:
+        ranked = sorted(dated, key=lambda r: r["date"], reverse=True)[:top_n]
+    else:
+        ranked = sorted(placed, key=lambda r: -max(
+            (v for k, v in r.items() if k in required and isinstance(v, (int, float))),
+            default=0.0))[:top_n]
 
     cells, seen = [], set()
     for r in ranked:
