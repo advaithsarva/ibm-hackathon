@@ -1,26 +1,20 @@
 # Disaster Response Intelligence Pipeline
 
 Hazard scoring, uncertainty-aware zoning, multi-sensor survivor detection, and
-capacity-aware evacuation routing — in one dashboard that runs with the network unplugged.
+capacity-aware evacuation routing, in one dashboard that runs with the network unplugged.
 
-Build spec: **[`DISASTER_PIPELINE_SPEC.md`](DISASTER_PIPELINE_SPEC.md)** — read §0 and §2 first.
-
----
+Build spec: [`DISASTER_PIPELINE_SPEC.md`](DISASTER_PIPELINE_SPEC.md). Read §0 and §2 first.
 
 ## The idea
 
-Every cell on a 100 m grid carries three numbers — hazard `X`, epistemic uncertainty `U`, and
-green-zone suitability `G`. Those produce three zones:
+Every cell on a 100 m grid carries three numbers: hazard `X`, epistemic uncertainty `U`, and
+green-zone suitability `G`. Those produce three zones.
 
 | Zone | Meaning | Action |
 |---|---|---|
-| 🔴 **RED** | known danger | dispatch rescue |
-| 🔵 **BLUE** | *we don't know enough to call it safe* | send a drone here next |
-| 🟢 **GREEN** | safe, reachable, has shelter capacity | evacuate here |
-
-**BLUE is the contribution.** Most risk maps bury uncertainty in a confidence interval nobody
-reads. Here it's a zone class with an owner and a queue position — uncertainty becomes a
-dispatchable recon task instead of a footnote.
+| RED | known danger | dispatch rescue |
+| BLUE | we don't know enough to call it safe | send a drone here next |
+| GREEN | safe, reachable, has shelter capacity | evacuate here |
 
 ```
 RED    if  X ≥ 0.75  OR  (X ≥ 0.40 AND U ≥ 0.50)
@@ -28,8 +22,13 @@ GREEN  if  X < 0.40  AND  U < 0.35  AND  G ≥ 0.60  AND reachable
 BLUE   otherwise
 ```
 
-`U` is a noisy-OR over three failure modes: model disagreement, data staleness, and sensor
-coverage gaps. A cell goes blue when SAR is 11 hours stale, not when the hazard is middling.
+BLUE is what the rest of the system is built around. Most risk maps put uncertainty in a
+confidence interval nobody acts on — here it's a zone class with a queue position. A cell
+turns blue when the SAR revisit is 11 hours stale, or when the sensors only covered part of
+it, and that cell goes to the top of the recon list.
+
+`U` is a noisy-OR over those three failure modes: model disagreement, data staleness, and
+sensor coverage gaps.
 
 ## Pipeline
 
@@ -52,12 +51,15 @@ coverage gaps. A cell goes blue when SAR is 11 hours stale, not when the hazard 
               dashboard
 ```
 
-Two design decisions worth defending in Q&A:
+Two decisions in there are worth knowing about before you read the code.
 
-- **`ETA` sits inside the survivability decay.** So a smaller, reachable cluster correctly
-  outranks a larger unreachable one — a real triage call no naive risk map makes.
-- **Evacuation is min-cost flow, not shortest path.** Shortest path sends everyone to the
-  nearest shelter and overflows it. Flow respects capacity.
+`ETA` sits inside the survivability decay term of `Π`, not outside it. A cluster of six people
+18 minutes away outranks a larger cluster 90 minutes away, because the ranking accounts for who
+is still alive when the team arrives.
+
+Evacuation is min-cost flow rather than shortest path. Shortest path sends everyone to the
+nearest shelter and overflows it; the flow formulation holds each shelter to its capacity and
+spills the remainder to the next one.
 
 ## API
 
@@ -71,7 +73,7 @@ dashboard can be built before any engine exists.
 | `GET /api/priority` | ranked dispatch plan with `pi`, `eta_min`, team, route |
 | `GET /api/evacuation` | shelter flow assignment, utilization, overflow |
 
-Cells join on `cell_id` — `"{lat:.4f}_{lon:.4f}"` of the centroid. Everything keys off that.
+Every response joins on `cell_id`, the `"{lat:.4f}_{lon:.4f}"` centroid string.
 
 ## Layout
 
@@ -94,12 +96,14 @@ run_demo.py
 
 ## Constraints
 
-- **4 GB VRAM**, single machine. Models load sequentially, never concurrently. ≤ 2.5 GB resident.
-- **Train nothing.** Inference-only or classical. Where weights don't exist, the physics formula
-  runs directly and is labelled a physics-based baseline.
-- **Assume the network fails at demo time.** All data pre-downloaded; `run_demo.py` reads only
-  from disk.
-- Earthquake is the shipping vertical slice. The other six disasters are config over the same engine.
+- 4 GB VRAM on a single machine. Models load sequentially, never concurrently, and stay under
+  2.5 GB resident.
+- Train nothing. Everything is inference-only or classical. Where weights don't exist the
+  physics formula runs directly, labelled as a physics-based baseline.
+- Assume the network fails at demo time. All data is pre-downloaded and `run_demo.py` reads
+  only from disk.
+- Earthquake is the shipping vertical slice. The other six disasters are config over the same
+  engine.
 
 ## Run
 
@@ -110,10 +114,10 @@ python run_demo.py          # offline; reads only from data/
 
 ## Status
 
-Scaffolding. Spec is frozen; modules land per §10 of the build plan.
+Scaffolding. The spec is frozen; modules land per §10 of the build plan.
 
-- [ ] `data/mock/*.json` — the four contracts
-- [ ] hazard `X` + zone engine with hysteresis
-- [ ] detection stack + log-odds fusion
-- [ ] priority ranker + risk-aware routing
+- [ ] `data/mock/*.json`, the four contracts
+- [ ] hazard `X` and the zone engine, with hysteresis
+- [ ] detection stack and log-odds fusion
+- [ ] priority ranker and risk-aware routing
 - [ ] dashboard
