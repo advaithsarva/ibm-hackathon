@@ -326,11 +326,20 @@ equal thirds.
 ```bash
 python -m src.hazard.test_hazard     # 10 checks
 python -m src.detect.test_detect     # 14 checks
-python -m src.test_pipeline          # 21 checks
+python -m src.test_pipeline          # 25 checks
+python -m src.audit_math             # 104 formula checks
 python data/mock/check_mocks.py      # fixtures obey the contracts
 ```
 
-45 checks, no framework and no fixtures. They test behaviour rather than restating the
+`src.audit_math` is separate from the tests on purpose. The tests check behaviour, so
+they pass even if a constant is quietly wrong; the audit recomputes every formula from
+the spec text by an independent route and compares — all seven hazard scores, the six
+physics models, noisy-OR, the zone rule on its exact boundaries, the green-suitability
+weights, the log-odds table against the spec's own printed log values, survivability,
+expected lives, the BPR edge cost, the POS projection matrix, and Horn slope against an
+analytic plane.
+
+153 checks in total, no framework and no fixtures. They test behaviour rather than restating the
 code: that a pulse buried at the noise floor is refused rather than guessed, that a road
 through a cell at `X >= 0.75` is never routed, that shelter capacity is never exceeded,
 that a cell with no route is reported instead of dropped, and that the IMD grid raises if
