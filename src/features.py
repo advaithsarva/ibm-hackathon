@@ -31,6 +31,7 @@ import pathlib
 
 import numpy as np
 
+from src.grid import cell_id
 from src.hazard.formulas import REPO_ROOT
 
 OUT = REPO_ROOT / "data" / "cache" / "features"
@@ -70,6 +71,140 @@ SCHEMAS = {
         "feeds": "configs/disasters/cyclone.yaml formation prior, not the hazard score",
     },
 }
+
+
+# Datasets that carry no ready-made label but do carry real signal. Each builder
+# derives a task the data can genuinely answer, rather than forcing a classifier onto a
+# file that cannot support one.
+DERIVED = {
+    "flood_season": {
+        "csv": "data/raw/kaggle/flood_rainfall/rainfaLLIndia.csv",
+        "task": ("Predict an extreme monsoon season from its first half. Trained on "
+                 "subdivision-year rows back to 1901, so the label is the historical "
+                 "distribution rather than an opinion."),
+        "feeds": "early warning: a June-July signal that the season will run extreme",
+    },
+    "drought_anomaly": {
+        "csv": "data/raw/kaggle/drought/groundwater_data/gldas_2018_2023.csv",
+        "task": ("Flag a district-month in soil-moisture deficit against that district's "
+                 "own 2018-2023 distribution. Absolute moisture varies hugely by "
+                 "district, so a national threshold would only rediscover geography."),
+        "feeds": "configs/disasters/drought.yaml, the SMI input",
+    },
+    "earthquake_prior": {
+        "csv": "data/raw/kaggle/earthquake/Earthquakes.csv",
+        "task": ("Spatial base rate per 0.5 degree cell: event count, maximum observed "
+                 "magnitude, median depth. Not a classifier. Magnitude is not predictable "
+                 "from position, and a model claiming otherwise would be fitting noise."),
+        "feeds": "configs/disasters/earthquake.yaml, a prior on the hazard layer",
+    },
+}
+
+
+def build_flood_season(val_fraction=0.2, seed=0):
+    """Extreme-season classification from early-monsoon rainfall.
+
+    Features are June and July totals and their ratio; the label is whether the full
+    June-September total landed in the top 20% for that subdivision. Per-subdivision
+    percentiles, not a national one: 300 mm is a drought in Kerala and a deluge in
+    Rajasthan, so a single national cut would just relabel the map.
+    """
+    rows = read_csv(DERIVED["flood_season"]["csv"])
+    by_sub = {}
+    for r in rows:
+        try:
+            jun, jul, aug, sep = (float(r[k]) for k in ("JUN", "JUL", "AUG", "SEP"))
+            season = float(r["JUN-SEP"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        if min(jun, jul, aug, sep, season) < 0:
+            continue
+        by_sub.setdefault(r["subdivision"].strip(), []).append((jun, jul, season))
+
+    X, y = [], []
+    for sub, records in by_sub.items():
+        if len(records) < 20:                    # too short a record to set a percentile
+            continue
+        seasons = sorted(s for _j, _l, s in records)
+        cut = seasons[int(len(seasons) * 0.8)]
+        for jun, jul, season in records:
+            early = jun + jul
+            X.append([jun, jul, early, jul / jun if jun > 0 else 0.0])
+            y.append(1 if season >= cut else 0)
+
+    return (np.asarray(X, float), np.asarray(y, int),
+            ["jun_mm", "jul_mm", "early_season_mm", "jul_jun_ratio"], 4)
+
+
+def build_drought_anomaly(val_fraction=0.2, seed=0):
+    """Soil-moisture deficit against each district's own distribution.
+
+    Features are the reading, its z-score within the district, and the month. The label
+    is the bottom 20% for that district, which is what a deficit means locally.
+    """
+    rows = read_csv(DERIVED["drought_anomaly"]["csv"])
+    by_district = {}
+    for r in rows:
+        try:
+            value = float(r["mean"])
+        except (ValueError, TypeError):
+            continue
+        if not math.isfinite(value):
+            continue
+        month = int(r["date"][5:7]) if len(r.get("date", "")) >= 7 else 0
+        by_district.setdefault(r["ADM2_NAME"].strip(), []).append((value, month))
+
+    X, y = [], []
+    for district, records in by_district.items():
+        if len(records) < 24:
+            continue
+        values = [v for v, _m in records]
+        mean = sum(values) / len(values)
+        sd = (sum((v - mean) ** 2 for v in values) / len(values)) ** 0.5 or 1.0
+        cut = sorted(values)[int(len(values) * 0.2)]
+        for value, month in records:
+            X.append([value, (value - mean) / sd, month,
+                      math.sin(2 * math.pi * month / 12),
+                      math.cos(2 * math.pi * month / 12)])
+            y.append(1 if value <= cut else 0)
+
+    return (np.asarray(X, float), np.asarray(y, int),
+            ["soil_moisture", "z_score_in_district", "month", "month_sin", "month_cos"], 5)
+
+
+def build_earthquake_prior(cell_deg=0.5):
+    """Spatial base rate per cell. A table, not a trained model.
+
+    Returns the per-cell record directly rather than an X/y pair, because there is no
+    label here worth predicting: a catalogue tells you where events have happened and how
+    big they got, and that is exactly what a prior should carry.
+    """
+    rows = read_csv(DERIVED["earthquake_prior"]["csv"])
+    cells = {}
+    for r in rows:
+        try:
+            lat, lon, mag = float(r["latitude"]), float(r["longitude"]), float(r["mag"])
+            depth = float(r["depth"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        key = (round(lat / cell_deg) * cell_deg, round(lon / cell_deg) * cell_deg)
+        c = cells.setdefault(key, {"count": 0, "max_mag": 0.0, "depths": [], "mags": []})
+        c["count"] += 1
+        c["max_mag"] = max(c["max_mag"], mag)
+        c["depths"].append(depth)
+        c["mags"].append(mag)
+
+    out = []
+    for (lat, lon), c in sorted(cells.items(), key=lambda kv: -kv[1]["count"]):
+        depths = sorted(c["depths"])
+        out.append({
+            "cell_id": cell_id(lat, lon), "centroid": [round(lat, 4), round(lon, 4)],
+            "event_count": c["count"],
+            "max_magnitude": round(c["max_mag"], 2),
+            "mean_magnitude": round(sum(c["mags"]) / len(c["mags"]), 3),
+            "median_depth_km": round(depths[len(depths) // 2], 2),
+        })
+    return out
 
 
 def read_csv(path):
@@ -259,6 +394,67 @@ def build(name, val_fraction=0.2, seed=0, out_dir=OUT, allow_leakage=False):
     return metadata
 
 
+DERIVED_BUILDERS = {
+    "flood_season": build_flood_season,
+    "drought_anomaly": build_drought_anomaly,
+}
+
+
+def build_derived(name, val_fraction=0.2, seed=0, out_dir=OUT):
+    """Same split, scaling and metadata as build(), for the derived tasks."""
+    X, y, features, n_cont = DERIVED_BUILDERS[name]()
+
+    leaked = check_leakage(X, y, features)
+    if leaked:
+        raise ValueError(f"{name}: target leakage in {leaked}")
+
+    train_idx, val_idx = stratified_split(y, val_fraction, seed)
+    X_train, y_train = X[train_idx], y[train_idx]
+    X_val, y_val = X[val_idx], y[val_idx]
+    mean, std = fit_scaler(X_train, n_cont)
+    X_train = apply_scaler(X_train, mean, std, n_cont)
+    X_val = apply_scaler(X_val, mean, std, n_cont)
+
+    target_dir = pathlib.Path(out_dir) / name
+    target_dir.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(target_dir / "train.npz", X=X_train, y=y_train)
+    np.savez_compressed(target_dir / "val.npz", X=X_val, y=y_val)
+
+    metadata = {
+        "dataset": name, "source_csv": DERIVED[name]["csv"], "derived": True,
+        "task": DERIVED[name]["task"], "feeds": DERIVED[name]["feeds"],
+        "feature_names": features, "n_continuous": n_cont, "n_binary": 0,
+        "scaler": {"mean": mean.tolist(), "std": std.tolist(),
+                   "fitted_on": "training rows only"},
+        "split": {"val_fraction": val_fraction, "seed": seed, "stratified": True,
+                  "n_train": int(len(y_train)), "n_val": int(len(y_val))},
+        "class_balance": {"train": {"0": int((y_train == 0).sum()),
+                                    "1": int((y_train == 1).sum())},
+                          "val": {"0": int((y_val == 0).sum()),
+                                  "1": int((y_val == 1).sum())}},
+        "point_biserial_with_target": {f: round(point_biserial(X[:, i], y), 4)
+                                       for i, f in enumerate(features)},
+    }
+    (target_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    return metadata
+
+
+def build_earthquake_prior_file(out_dir=OUT):
+    """Write the spatial prior as JSON. Not an X/y pair; there is no label to predict."""
+    cells = build_earthquake_prior()
+    target = pathlib.Path(out_dir) / "earthquake_prior"
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "prior.json").write_text(json.dumps(cells, indent=2) + "\n")
+    (target / "metadata.json").write_text(json.dumps({
+        "dataset": "earthquake_prior", "derived": True, "cells": len(cells),
+        "task": DERIVED["earthquake_prior"]["task"],
+        "feeds": DERIVED["earthquake_prior"]["feeds"],
+        "fields": ["cell_id", "centroid", "event_count", "max_magnitude",
+                   "mean_magnitude", "median_depth_km"],
+    }, indent=2) + "\n")
+    return {"cells": len(cells)}
+
+
 def profile(name):
     """What is in the file, before committing a night of GPU time to it."""
     schema = SCHEMAS[name]
@@ -339,7 +535,7 @@ def _cli():
     ap.add_argument("--profile", choices=sorted(SCHEMAS))
     ap.add_argument("--build", choices=sorted(SCHEMAS))
     ap.add_argument("--build-all", action="store_true")
-    ap.add_argument("--baseline", choices=sorted(SCHEMAS))
+    ap.add_argument("--baseline")
     ap.add_argument("--val-fraction", type=float, default=0.2)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
@@ -354,6 +550,18 @@ def _cli():
             m = r[split]
             print(f"  {split:<6} accuracy {m['accuracy']:.4f}  precision {m['precision']:.4f}"
                   f"  recall {m['recall']:.4f}  f1 {m['f1']:.4f}")
+        # Accuracy on an imbalanced set is a trap: predicting the majority class for
+        # everything scores the base rate and finds nothing. When F1 collapses while
+        # accuracy looks respectable, that is exactly what has happened, and it is worth
+        # saying out loud rather than printing 0.79 and moving on.
+        v = r["val"]
+        if v["f1"] < 0.5 and v["accuracy"] > 0.7:
+            print(f"\n  WARNING: accuracy {v['accuracy']:.4f} but F1 {v['f1']:.4f} "
+                  f"and recall {v['recall']:.4f}.")
+            print("  The baseline is mostly predicting the majority class. This task is "
+                  "NOT solved,")
+            print("  and it is the one where a trained model would actually earn its "
+                  "GPU time.")
         gap = r["train"]["accuracy"] - r["val"]["accuracy"]
         print(f"  train-val gap {gap:+.4f}" +
               ("  (overfitting)" if gap > 0.05 else "  (no overfitting)"))
@@ -363,7 +571,22 @@ def _cli():
         print("\n  Beat this with the trained model, or the trained model is not earning "
               "its GPU time.")
         return
-    names = sorted(SCHEMAS) if args.build_all else ([args.build] if args.build else [])
+    if args.build_all:
+        names = sorted(SCHEMAS)
+        for name in names:
+            m = build(name, args.val_fraction, args.seed)
+            print(f"{name}: {m['split']['n_train']} train / {m['split']['n_val']} val, "
+                  f"{len(m['feature_names'])} features")
+        for name in sorted(DERIVED_BUILDERS):
+            m = build_derived(name, args.val_fraction, args.seed)
+            print(f"{name}: {m['split']['n_train']} train / {m['split']['n_val']} val, "
+                  f"{len(m['feature_names'])} features  (derived)")
+        prior = build_earthquake_prior_file()
+        print(f"earthquake_prior: {prior['cells']} cells  (spatial prior, no label)")
+        print("\nLoad in a training script with:")
+        print("    d = np.load('data/cache/features/<name>/train.npz'); X, y = d['X'], d['y']")
+        return
+    names = [args.build] if args.build else []
     if not names:
         ap.print_help()
         return

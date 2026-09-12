@@ -1,0 +1,503 @@
+{
+  "name": "coimbatore_flood",
+  "district": "Coimbatore, Tamil Nadu",
+  "disaster": "flood",
+  "river": "Noyyal",
+  "bankfull_m": 3.2,
+  "state": {
+    "river_stage_m": 4.6,
+    "rainfall_24h_mm": 148.0,
+    "sar_staleness_h": 11.2,
+    "observed_at": "2026-09-12T18:40:00Z"
+  },
+  "prohibited_routes": [
+    "Ukkadam - Podanur via Noyyal River Bridge (2.1 m overtopped)",
+    "Singanallur Causeway (submerged, 1.6 m)",
+    "Vellalore - Irugur low road (drainage failure)"
+  ],
+  "wards": [
+    {
+      "name": "R.S. Puram",
+      "lat": 11.0045,
+      "lon": 76.949,
+      "elevation_m": 421,
+      "relief_m": 11.0,
+      "pop": 48200,
+      "rain_factor": 1.0,
+      "river_dist_km": 2.299,
+      "assets": [
+        {
+          "type": "hospital",
+          "name": "Coimbatore Medical College Hospital",
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "Gandhipuram",
+      "lat": 11.0168,
+      "lon": 76.966,
+      "elevation_m": 418,
+      "relief_m": 8.5,
+      "pop": 62400,
+      "rain_factor": 1.02,
+      "river_dist_km": 3.313,
+      "assets": [
+        {
+          "type": "hospital",
+          "name": "KMCH Gandhipuram",
+          "value": 1.0
+        },
+        {
+          "type": "police",
+          "name": "Gandhipuram Control Room",
+          "value": 0.6
+        }
+      ]
+    },
+    {
+      "name": "Peelamedu",
+      "lat": 11.03,
+      "lon": 77.01,
+      "elevation_m": 412,
+      "relief_m": 9.0,
+      "pop": 55100,
+      "rain_factor": 1.05,
+      "river_dist_km": 3.807,
+      "assets": [
+        {
+          "type": "hospital",
+          "name": "PSG Hospitals",
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "Singanallur",
+      "lat": 11.005,
+      "lon": 77.03,
+      "elevation_m": 402,
+      "relief_m": 3.0,
+      "pop": 51800,
+      "rain_factor": 1.08,
+      "river_dist_km": 0.605,
+      "assets": [
+        {
+          "type": "bridge",
+          "name": "Singanallur Causeway",
+          "value": 0.9
+        },
+        {
+          "type": "water_treatment",
+          "name": "Singanallur Pumping Station",
+          "value": 0.65
+        }
+      ],
+      "gauge": true
+    },
+    {
+      "name": "Saibaba Colony",
+      "lat": 11.023,
+      "lon": 76.945,
+      "elevation_m": 425,
+      "relief_m": 13.5,
+      "pop": 43700,
+      "rain_factor": 0.98,
+      "river_dist_km": 4.391,
+      "assets": []
+    },
+    {
+      "name": "Ganapathy",
+      "lat": 11.045,
+      "lon": 76.99,
+      "elevation_m": 415,
+      "relief_m": 10.0,
+      "pop": 39600,
+      "rain_factor": 1.0,
+      "river_dist_km": 5.873,
+      "assets": [
+        {
+          "type": "power_substation",
+          "name": "Ganapathy 110kV Substation",
+          "value": 0.75
+        }
+      ]
+    },
+    {
+      "name": "Ramanathapuram",
+      "lat": 10.995,
+      "lon": 76.98,
+      "elevation_m": 406,
+      "relief_m": 4.5,
+      "pop": 47300,
+      "rain_factor": 1.06,
+      "river_dist_km": 0.648,
+      "assets": []
+    },
+    {
+      "name": "Ukkadam",
+      "lat": 10.988,
+      "lon": 76.96,
+      "elevation_m": 398,
+      "relief_m": 1.5,
+      "pop": 58900,
+      "rain_factor": 1.1,
+      "river_dist_km": 0.299,
+      "assets": [
+        {
+          "type": "bridge",
+          "name": "Noyyal River Bridge (Ukkadam)",
+          "value": 0.9
+        }
+      ],
+      "gauge": true
+    },
+    {
+      "name": "Podanur",
+      "lat": 10.97,
+      "lon": 76.95,
+      "elevation_m": 401,
+      "relief_m": 3.5,
+      "pop": 34200,
+      "rain_factor": 1.04,
+      "river_dist_km": 1.514,
+      "assets": [
+        {
+          "type": "bridge",
+          "name": "Podanur Rail Underbridge",
+          "value": 0.9
+        }
+      ]
+    },
+    {
+      "name": "Kuniamuthur",
+      "lat": 10.96,
+      "lon": 76.94,
+      "elevation_m": 404,
+      "relief_m": 5.0,
+      "pop": 31500,
+      "rain_factor": 1.02,
+      "river_dist_km": 2.477,
+      "assets": []
+    },
+    {
+      "name": "Vadavalli",
+      "lat": 11.025,
+      "lon": 76.895,
+      "elevation_m": 436,
+      "relief_m": 20.0,
+      "pop": 28800,
+      "rain_factor": 0.94,
+      "river_dist_km": 5.335,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Vadavalli Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 4000
+    },
+    {
+      "name": "Thudiyalur",
+      "lat": 11.07,
+      "lon": 76.93,
+      "elevation_m": 432,
+      "relief_m": 17.5,
+      "pop": 26400,
+      "rain_factor": 0.95,
+      "river_dist_km": 9.772,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Thudiyalur Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 3500
+    },
+    {
+      "name": "Saravanampatti",
+      "lat": 11.075,
+      "lon": 77.0,
+      "elevation_m": 424,
+      "relief_m": 14.0,
+      "pop": 44900,
+      "rain_factor": 0.99,
+      "river_dist_km": 8.919,
+      "assets": [
+        {
+          "type": "fire_station",
+          "name": "Saravanampatti Fire & Rescue",
+          "value": 0.7
+        }
+      ]
+    },
+    {
+      "name": "Kalapatti",
+      "lat": 11.055,
+      "lon": 77.035,
+      "elevation_m": 419,
+      "relief_m": 12.0,
+      "pop": 22700,
+      "rain_factor": 1.01,
+      "river_dist_km": 5.811,
+      "assets": []
+    },
+    {
+      "name": "Sulur",
+      "lat": 11.025,
+      "lon": 77.125,
+      "elevation_m": 408,
+      "relief_m": 6.5,
+      "pop": 29300,
+      "rain_factor": 1.03,
+      "river_dist_km": 1.726,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Sulur Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 4500
+    },
+    {
+      "name": "Annur",
+      "lat": 11.235,
+      "lon": 77.105,
+      "elevation_m": 445,
+      "relief_m": 22.0,
+      "pop": 18600,
+      "rain_factor": 0.9,
+      "river_dist_km": 23.871,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Annur Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 6000
+    },
+    {
+      "name": "Race Course",
+      "lat": 11.0,
+      "lon": 76.97,
+      "elevation_m": 414,
+      "relief_m": 8.0,
+      "pop": 21400,
+      "rain_factor": 1.02,
+      "river_dist_km": 1.4,
+      "assets": []
+    },
+    {
+      "name": "Town Hall",
+      "lat": 10.997,
+      "lon": 76.959,
+      "elevation_m": 405,
+      "relief_m": 3.8,
+      "pop": 33800,
+      "rain_factor": 1.07,
+      "river_dist_km": 1.3,
+      "assets": [
+        {
+          "type": "clinic",
+          "name": "Town Hall Urban PHC",
+          "value": 0.6
+        }
+      ]
+    },
+    {
+      "name": "Selvapuram",
+      "lat": 10.982,
+      "lon": 76.935,
+      "elevation_m": 407,
+      "relief_m": 5.5,
+      "pop": 36200,
+      "rain_factor": 1.03,
+      "river_dist_km": 0.014,
+      "assets": []
+    },
+    {
+      "name": "Kavundampalayam",
+      "lat": 11.045,
+      "lon": 76.935,
+      "elevation_m": 429,
+      "relief_m": 16.0,
+      "pop": 40100,
+      "rain_factor": 0.96,
+      "river_dist_km": 6.951,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Kavundampalayam Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 3800
+    },
+    {
+      "name": "Veerakeralam",
+      "lat": 11.03,
+      "lon": 76.91,
+      "elevation_m": 433,
+      "relief_m": 18.5,
+      "pop": 19800,
+      "rain_factor": 0.95,
+      "river_dist_km": 5.649,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Veerakeralam Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 3000
+    },
+    {
+      "name": "Perur",
+      "lat": 10.98,
+      "lon": 76.89,
+      "elevation_m": 427,
+      "relief_m": 9.5,
+      "pop": 17300,
+      "rain_factor": 0.97,
+      "river_dist_km": 0.471,
+      "assets": [],
+      "gauge": true
+    },
+    {
+      "name": "Chinniampalayam",
+      "lat": 11.01,
+      "lon": 77.05,
+      "elevation_m": 409,
+      "relief_m": 6.0,
+      "pop": 24600,
+      "rain_factor": 1.04,
+      "river_dist_km": 0.561,
+      "assets": []
+    },
+    {
+      "name": "Vellalore",
+      "lat": 10.96,
+      "lon": 77.02,
+      "elevation_m": 396,
+      "relief_m": 2.0,
+      "pop": 27900,
+      "rain_factor": 1.09,
+      "river_dist_km": 4.024,
+      "assets": [
+        {
+          "type": "water_treatment",
+          "name": "Vellalore Sewage Works",
+          "value": 0.65
+        }
+      ]
+    },
+    {
+      "name": "Kurichi",
+      "lat": 10.95,
+      "lon": 76.965,
+      "elevation_m": 400,
+      "relief_m": 3.2,
+      "pop": 42800,
+      "rain_factor": 1.06,
+      "river_dist_km": 3.946,
+      "assets": [
+        {
+          "type": "clinic",
+          "name": "Kurichi PHC",
+          "value": 0.6
+        }
+      ]
+    },
+    {
+      "name": "Idigarai",
+      "lat": 11.09,
+      "lon": 76.96,
+      "elevation_m": 434,
+      "relief_m": 19.0,
+      "pop": 15200,
+      "rain_factor": 0.93,
+      "river_dist_km": 11.415,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Idigarai Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 2500
+    },
+    {
+      "name": "Onapalayam",
+      "lat": 11.06,
+      "lon": 76.89,
+      "elevation_m": 438,
+      "relief_m": 21.0,
+      "pop": 12700,
+      "rain_factor": 0.92,
+      "river_dist_km": 9.258,
+      "assets": [
+        {
+          "type": "shelter",
+          "name": "Onapalayam Relief Centre",
+          "value": 0.85
+        }
+      ],
+      "shelter": true,
+      "shelter_capacity": 2800
+    },
+    {
+      "name": "Madukkarai",
+      "lat": 10.905,
+      "lon": 76.955,
+      "elevation_m": 411,
+      "relief_m": 7.5,
+      "pop": 23100,
+      "rain_factor": 1.0,
+      "river_dist_km": 8.74,
+      "assets": []
+    },
+    {
+      "name": "Irugur",
+      "lat": 11.015,
+      "lon": 77.06,
+      "elevation_m": 403,
+      "relief_m": 2.8,
+      "pop": 26800,
+      "rain_factor": 1.07,
+      "river_dist_km": 0.807,
+      "assets": [],
+      "gauge": true
+    },
+    {
+      "name": "Neelambur",
+      "lat": 11.04,
+      "lon": 77.07,
+      "elevation_m": 413,
+      "relief_m": 8.8,
+      "pop": 18900,
+      "rain_factor": 1.01,
+      "river_dist_km": 3.227,
+      "assets": []
+    }
+  ],
+  "centre": [
+    11.0168,
+    76.966
+  ],
+  "evacuation_policy": {
+    "trigger_depth_m": 0.5,
+    "evacuation_rate": 0.08,
+    "note": "Only wards with standing water at or above the trigger are evacuated, and at the share of residents a district actually moves to relief centres. Evacuating a third of every at-risk ward is not a plan, it is a number larger than the shelter system."
+  }
+}
