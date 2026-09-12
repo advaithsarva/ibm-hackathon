@@ -33,23 +33,58 @@ sensor coverage gaps.
 ## Pipeline
 
 ```
-  ingest ─── level 1  meteorological   rainfall · gauges · CAPE · SST
-        ├─── level 2  geospatial       DEM · slope · Sentinel-1 SAR · NDVI
-        └─── level 3  infrastructure   OSM roads/hospitals · WorldPop density
-                │
-                ▼   common grid · common CRS · common timestamp
-         hazard engine ──▶  X ∈ [0,1]        physics: Manning · Holland · GMPE · FS · VCI
-                │
-         zone engine  ──▶  U, G  →  RED / BLUE / GREEN      ← core novelty
-                │
-         detection    ──▶  P_alive           RGB · thermal · rPPG · acoustic
-                │                            fused by Bayesian log-odds
-         priority     ──▶  Π = N · P_alive · S(t + ETA) · κ
-                │
-         routing      ──▶  risk-weighted Dijkstra + min-cost flow
-                │
-              dashboard
+ LEVEL 1  ATMOSPHERIC & METEOROLOGICAL    IMD rainfall · CWC gauges · GloFAS · CAPE · SST
+ LEVEL 2  GEOSPATIAL & TERRAIN            Bhuvan DEM/slope · Sentinel-1/2 · SRTM · NDVI
+ LEVEL 3  INFRASTRUCTURE & SOCIO-ECONOMIC OSM roads/bridges/hospitals · WorldPop · HRSL
+                          │
+                          ▼
+        [CLEANING & SYNCHRONIZATION]          common grid · common CRS · common timestamp
+                          │
+                          ▼
+        [PREPROCESSING & FEATURE ENGINEERING]
+                          │
+                          ▼
+        [ML INFERENCE ENGINE]                 physics: Manning · Holland · GMPE · FS · VCI
+                          │
+                          ▼
+        [NORMALIZED THRESHOLD MAPPING]        X ∈ [0,1]
+                          │
+                          ▼
+        [ZONE ENGINE]                         U, G  →  RED / BLUE / GREEN
+                          │
+                          ▼
+        [RISK & IMPACT MAP GENERATION]
+          ├── Affected Areas
+          ├── Critical Infrastructure Exposure
+          └── Population Risk & Rescue Priority Score
+                          │
+                          ▼
+        [DETECTION & VITALS FUSION]           RGB · thermal · rPPG · acoustic
+                          │                   → P_alive by Bayesian log-odds
+                          ▼
+        [EVACUATION PRIORITY RANKER]          Π = N · P_alive · S(t + ETA) · κ
+                          │
+                          ▼
+        [ROUTE OPTIMIZER]                     risk-weighted Dijkstra + min-cost flow
+                          │
+                          ▼
+        [RESCUE PLAN GENERATOR & DASHBOARD]
+          ├── Interactive GIS Map
+          ├── Alert Dashboard
+          └── Report Generator
 ```
+
+| Stage | Status |
+|---|---|
+| Levels 1–3 ingest, cleaning, preprocessing | not built; fixtures stand in |
+| ML inference engine | physics baselines in `src/hazard/physics.py`; no trained models yet |
+| Normalized threshold mapping | `src/hazard/formulas.py` |
+| Zone engine | `src/hazard/zones.py` |
+| Risk & impact map, rescue priority score | exposure score in `zones.py`; map layers not built |
+| Detection & vitals fusion | `src/detect/` |
+| Evacuation priority ranker, route optimizer | not built |
+| Alert dashboard | `/api/alert/summary` only; no UI |
+| Interactive GIS map, report generator | not built |
 
 Two decisions in there are worth knowing about before you read the code.
 
