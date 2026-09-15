@@ -1,0 +1,42 @@
+{
+  "model": "YAMNet (real, Google-pretrained on AudioSet, unmodified) + PyTorch transfer head",
+  "device": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "yamnet_real_inference_top5": [
+    {
+      "class": "Alarm",
+      "score": 0.614
+    },
+    {
+      "class": "Whistle",
+      "score": 0.551
+    },
+    {
+      "class": "Siren",
+      "score": 0.539
+    },
+    {
+      "class": "Civil defense siren",
+      "score": 0.324
+    },
+    {
+      "class": "Police car (siren)",
+      "score": 0.296
+    }
+  ],
+  "transfer_head_val": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "brier": 0.0004,
+    "confusion": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 0,
+      "tn": 12
+    },
+    "n": 20
+  },
+  "note": "No licensed distress-audio corpus (AudioSet/scream datasets all require registration or a Kaggle account) could be auto-downloaded, so the transfer head is trained on a SYNTHETIC proxy corpus (frequency-swept bursts vs noise), not real screams. The YAMNet embeddings underneath are the real Google model."
+}

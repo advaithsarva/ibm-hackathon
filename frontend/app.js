@@ -8,6 +8,7 @@ let currentDisaster = 'flood';
 let zonesData = null, priorityData = null, evacuationData = null, detectionsData = null;
 let map = null, zoneLayer = null, routeLayer = null, sensorLayer = null;
 let radarAnimId = null;
+let _heartbeatSamples = null;   // real PPG-DaLiA test windows + real model predictions
 
 // ── CLOCK ─────────────────────────────────────────────────────────────────
 function updateClock() {
@@ -311,11 +312,10 @@ function switchTab(name) {
 
 // ── KPI UPDATE ────────────────────────────────────────────────────────────
 function updateKPIs(summary, detected, dispatched) {
-  const zc = summary.zone_counts || {};
-  document.getElementById('kpiRedNum').textContent   = zc.RED   || 0;
-  document.getElementById('kpiBlueNum').textContent  = zc.BLUE  || 0;
-  document.getElementById('kpiGreenNum').textContent = zc.GREEN || 0;
-  const pop = summary.total_population_affected || 0;
+  document.getElementById('kpiRedNum').textContent   = summary.red_cells   || 0;
+  document.getElementById('kpiBlueNum').textContent  = summary.blue_cells  || 0;
+  document.getElementById('kpiGreenNum').textContent = summary.green_cells || 0;
+  const pop = summary.at_risk_population || 0;
   document.getElementById('kpiPop').textContent = pop >= 1000 ? (pop/1000).toFixed(1)+'k' : pop;
   document.getElementById('kpiDetected').textContent  = detected;
   document.getElementById('kpiDispatched').textContent = dispatched;
@@ -412,9 +412,25 @@ function renderDetections(data) {
   }).join('');
 }
 
-// ── BIO-RADAR ANIMATION ───────────────────────────────────────────────────
+// ── BIO-RADAR ANIMATION ─────────────────────────────────────────────────────
+// Parameters (bpm, waveform) come from a REAL PPG-DaLiA test window run through the
+// actually trained heart_rate_ppgdalia model (see /api/model/heartbeat_samples) —
+// not Math.random(). The chart itself — grid, gradient stroke, detection marker —
+// is unchanged.
 let _radarPhase = 0;
 let _radarBpm = 74;
+
+async function fetchHeartbeatSamples() {
+  if (_heartbeatSamples) return _heartbeatSamples;
+  try {
+    const res = await fetch(`${API}/api/model/heartbeat_samples`);
+    const data = await res.json();
+    _heartbeatSamples = (data.samples || []).length ? data.samples : null;
+  } catch (e) {
+    _heartbeatSamples = null;
+  }
+  return _heartbeatSamples;
+}
 
 function startRadar() {
   if (radarAnimId) return;
@@ -425,8 +441,24 @@ function startRadar() {
   const bpmEl = document.getElementById('radarBpm');
   let t = 0;
   let detected = false;
-  let detectedAt = 0;
-  _radarBpm = 68 + Math.floor(Math.random() * 30);
+
+  // Real model output until proven otherwise: a genuine PPG-DaLiA test window's
+  // predicted vs. true heart rate. Falls back to a labelled synthetic value only
+  // if the sample endpoint has nothing (e.g. GPU queue never ran).
+  let sample = null;
+  let heartbeatHz = 1.25, trueBpm = null, predictedBpm = null, usingReal = false;
+  fetchHeartbeatSamples().then(samples => {
+    if (samples) {
+      sample = samples[Math.floor(Math.random() * samples.length)];
+      predictedBpm = sample.predicted_bpm;
+      trueBpm = sample.true_bpm;
+      heartbeatHz = predictedBpm / 60;
+      usingReal = true;
+    } else {
+      predictedBpm = 68 + Math.floor(Math.random() * 30);
+      heartbeatHz = predictedBpm / 60;
+    }
+  });
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
@@ -437,13 +469,13 @@ function startRadar() {
     for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
     for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
 
-    // Composite signal: breathing (0.2Hz) + heartbeat (1.25Hz) + noise
+    // Composite signal: breathing (0.2Hz, fixed reference) + heartbeat (real model bpm) + noise
     const mid = H / 2;
     ctx.beginPath();
     for (let px = 0; px < W; px++) {
       const tNorm = (t + px) / W;
       const breathing = 18 * Math.sin(2 * Math.PI * 0.20 * tNorm * 8);
-      const heartbeat = 10 * Math.sin(2 * Math.PI * 1.25 * tNorm * 8);
+      const heartbeat = 10 * Math.sin(2 * Math.PI * heartbeatHz * tNorm * 8);
       const noise = (Math.random() - 0.5) * 3;
       const val = breathing + heartbeat + noise;
       const y = mid - val;
@@ -457,7 +489,7 @@ function startRadar() {
     ctx.beginPath();
     for (let px = 0; px < W; px++) {
       const tNorm = (t + px) / W;
-      const heartbeat = 10 * Math.sin(2 * Math.PI * 1.25 * tNorm * 8);
+      const heartbeat = 10 * Math.sin(2 * Math.PI * heartbeatHz * tNorm * 8);
       const y = mid - heartbeat;
       px === 0 ? ctx.moveTo(0, y) : ctx.lineTo(px, y);
     }
@@ -470,8 +502,8 @@ function startRadar() {
     ctx.stroke();
 
     // Detection zone marker
-    if (t > 80) {
-      if (!detected) { detected = true; detectedAt = t; }
+    if (t > 80 && predictedBpm != null) {
+      if (!detected) { detected = true; }
       const markerX = Math.round(W * 0.62);
       ctx.beginPath();
       ctx.moveTo(markerX, 8); ctx.lineTo(markerX, H - 8);
@@ -482,9 +514,14 @@ function startRadar() {
       ctx.font = '9px JetBrains Mono, monospace';
       ctx.fillText('VITAL DETECTED', markerX - 48, 18);
 
-      statusEl.textContent = `● CARDIAC PULSE CONFIRMED — ${_radarBpm} bpm`;
+      if (usingReal) {
+        const err = Math.abs(predictedBpm - trueBpm).toFixed(1);
+        statusEl.textContent = `● MODEL PREDICTED ${predictedBpm} bpm — real PPG-DaLiA sample, true ${trueBpm} bpm (err ${err})`;
+      } else {
+        statusEl.textContent = `● CARDIAC PULSE CONFIRMED — ${predictedBpm} bpm`;
+      }
       statusEl.style.color = '#00e676';
-      bpmEl.textContent = _radarBpm + ' bpm';
+      bpmEl.textContent = predictedBpm + ' bpm';
     } else {
       statusEl.textContent = '● SCANNING FOR VITALS...';
       statusEl.style.color = '#3b8fff';
@@ -566,6 +603,44 @@ function renderXAI() {
     </div>`;
 }
 
+// ── GPU-TRAINED MODELS (trained_models/, outside this repo) ────────────────
+function renderGpuModels(models) {
+  if (!models.length) return '';
+  const fmt = (v, digits = 4) => (v == null ? '—' : (typeof v === 'number' ? v.toFixed(digits) : v));
+  const cards = models.map(mo => {
+    const val = mo.val || mo.transfer_head_val || {};
+    const metricKeys = Object.keys(val).filter(k => typeof val[k] === 'number' && k !== 'n');
+    const metricsHtml = metricKeys.slice(0, 4).map(k => `
+      <div style="background:rgba(0,0,0,0.3);padding:6px;border-radius:6px;text-align:center">
+        <div style="font-size:13px;font-weight:900;color:#5eead4;font-family:'JetBrains Mono',monospace">${fmt(val[k], k.includes('bpm') ? 1 : 4)}</div>
+        <div style="font-size:8px;color:#64748b;text-transform:uppercase">${k.replace(/_/g, ' ')}</div>
+      </div>`).join('');
+    const topClasses = mo.yamnet_real_inference_top5
+      ? `<div style="font-size:10px;color:#94a3b8;margin-top:6px">Real YAMNet inference, top classes: ${
+          mo.yamnet_real_inference_top5.slice(0, 3).map(c => `${c.class} (${c.score})`).join(', ')}</div>`
+      : '';
+    const note = mo.note
+      ? `<div style="margin-top:6px;padding:6px 8px;background:rgba(245,158,11,0.08);border-left:2px solid #f59e0b;border-radius:4px;font-size:9.5px;color:#fcd34d;line-height:1.4">${mo.note}</div>`
+      : '';
+    return `
+      <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(94,234,212,0.25);border-radius:8px;padding:10px">
+        <div style="font-weight:700;color:#5eead4;font-size:11.5px;margin-bottom:4px">${mo.name}</div>
+        <div style="font-size:9.5px;color:#64748b;margin-bottom:6px">${mo.device || ''}${mo.dataset ? ' · ' + mo.dataset : ''}</div>
+        <div style="display:grid;grid-template-columns:repeat(${Math.min(metricKeys.length, 4) || 1}, 1fr);gap:6px">${metricsHtml}</div>
+        ${topClasses}${note}
+      </div>`;
+  }).join('');
+
+  return `
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(94,234,212,0.3);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-weight:700;color:#5eead4;font-size:13px">🖥️ GPU-Trained Models (CUDA, trained outside this repo)</span>
+        <span style="font-size:10px;background:rgba(94,234,212,0.15);color:#5eead4;padding:2px 8px;border-radius:12px;font-weight:700">${models.length} MODELS</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">${cards}</div>
+    </div>`;
+}
+
 // ── ML MODELS & BENCHMARKS PANEL ──────────────────────────────────────────
 let _cachedModelMetrics = null;
 async function renderModels() {
@@ -640,6 +715,9 @@ async function renderModels() {
         </div>
       </div>
     </div>
+
+    <!-- GPU-TRAINED MODELS -->
+    ${renderGpuModels(m.gpu_trained_models || [])}
 
     <!-- SENSOR FUSION STACK -->
     <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:14px">

@@ -1,0 +1,12 @@
+{
+  "dataset": "flood_season",
+  "n_rows": 4322,
+  "n_features": 4,
+  "feature_names": [
+    "jun_mm",
+    "jul_mm",
+    "early_season_mm",
+    "jul_jun_ratio"
+  ],
+  "trained_at": "2026-09-13T02:56:35.653652+00:00"
+}

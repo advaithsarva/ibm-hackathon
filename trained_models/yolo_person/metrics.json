@@ -1,0 +1,13 @@
+{
+  "model": "yolo11n fine-tuned (base COCO-pretrained, auto-downloaded by ultralytics)",
+  "device": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "dataset": "PennFudanPed (170 images, 345 pedestrian instances, direct download, no login)",
+  "n_train_images": 136,
+  "n_val_images": 34,
+  "val": {
+    "precision": 0.9879,
+    "recall": 0.9582,
+    "map50": 0.9923,
+    "map50_95": 0.7887
+  }
+}

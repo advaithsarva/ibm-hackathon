@@ -1,0 +1,47 @@
+{
+  "model": "pytorch_mlp_32_16",
+  "device": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "train": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "brier": 0.0001,
+    "confusion": {
+      "tp": 800,
+      "fp": 0,
+      "fn": 0,
+      "tn": 800
+    },
+    "n": 1600
+  },
+  "val": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "brier": 0.00016,
+    "confusion": {
+      "tp": 200,
+      "fp": 0,
+      "fn": 0,
+      "tn": 200
+    },
+    "n": 400
+  },
+  "feature_names": [
+    "Rainfall_mm",
+    "Slope_Angle",
+    "Soil_Saturation",
+    "Vegetation_Cover",
+    "Earthquake_Activity",
+    "Proximity_to_Water",
+    "Soil_Type_Gravel",
+    "Soil_Type_Sand",
+    "Soil_Type_Silt"
+  ],
+  "n_train": 1600,
+  "n_val": 400
+}

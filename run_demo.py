@@ -10,7 +10,7 @@ import time
 import webbrowser
 import os
 
-PORT = 8000
+PORT = 8001
 URL = f"http://localhost:{PORT}"
 
 def main():

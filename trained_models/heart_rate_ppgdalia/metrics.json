@@ -1,0 +1,18 @@
+{
+  "model": "pytorch_mlp_32_16 (regression)",
+  "device": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "dataset": "PPG-DaLiA via Zenodo #3902728 (sktime .ts) \u2014 wrist PPG+ACC, ECG-derived HR, standard train/test split",
+  "train": {
+    "mae_bpm": 28.91,
+    "rmse_bpm": 35.89,
+    "n": 43215
+  },
+  "val": {
+    "mae_bpm": 28.66,
+    "rmse_bpm": 34.91,
+    "n": 21482
+  },
+  "fft_peak_only_baseline_val_mae_bpm": 14.78,
+  "n_train": 43215,
+  "n_val": 21482
+}

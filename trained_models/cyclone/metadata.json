@@ -1,0 +1,16 @@
+{
+  "dataset": "cyclone",
+  "n_rows": 2000,
+  "n_features": 8,
+  "feature_names": [
+    "Sea_Surface_Temperature",
+    "Atmospheric_Pressure",
+    "Humidity",
+    "Wind_Shear",
+    "Vorticity",
+    "Latitude",
+    "Ocean_Depth",
+    "Proximity_to_Coastline"
+  ],
+  "trained_at": "2026-09-13T02:56:35.219430+00:00"
+}

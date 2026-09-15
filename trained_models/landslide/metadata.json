@@ -1,0 +1,17 @@
+{
+  "dataset": "landslide",
+  "n_rows": 2000,
+  "n_features": 9,
+  "feature_names": [
+    "Rainfall_mm",
+    "Slope_Angle",
+    "Soil_Saturation",
+    "Vegetation_Cover",
+    "Earthquake_Activity",
+    "Proximity_to_Water",
+    "Soil_Type_Gravel",
+    "Soil_Type_Sand",
+    "Soil_Type_Silt"
+  ],
+  "trained_at": "2026-09-13T02:56:34.771607+00:00"
+}

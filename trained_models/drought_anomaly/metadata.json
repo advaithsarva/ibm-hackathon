@@ -1,0 +1,13 @@
+{
+  "dataset": "drought_anomaly",
+  "n_rows": 473256,
+  "n_features": 5,
+  "feature_names": [
+    "soil_moisture",
+    "z_score_in_district",
+    "month",
+    "month_sin",
+    "month_cos"
+  ],
+  "trained_at": "2026-09-13T02:56:41.575386+00:00"
+}

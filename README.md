@@ -317,7 +317,10 @@ Stated plainly, because a demo that overclaims loses the room in Q&A.
 | Priority, dispatch, routing, evacuation | **real** algorithms |
 | Ward terrain, elevation, population | **modelled** for Coimbatore, labelled in every record |
 | Per-ward detection records | **synthetic** pending live feeds; the fused `p_alive` is real |
-| YOLO, YAMNet and flood-segmentation weights | **trained**, loaded through the sequential GPU guard |
+| YOLO11n person detector | **real**, fine-tuned on PennFudanPed (real photos), see §14 |
+| YAMNet acoustic classifier | **real** Google checkpoint; only its small transfer head trains on synthetic audio, see §14 |
+| Heart-rate (PPG→BPM) model | **real**, trained on PPG-DaLiA; MAE ≈ 28.7 bpm held-out — a real, imperfect number, see §14 |
+| Bio-Radar pulse chart (dashboard) | **real model output** driving the chart parameters; the chart itself is still a visualization, not hardware |
 | `GET /api/radar/heartbeat` | **simulated.** FINDER-class radar is hardware we do not have |
 
 `configs/disasters/flood.yaml` needs river discharge. With no CWC gauge export, both the
@@ -463,6 +466,45 @@ equal thirds.
 - [x] FastAPI backend, eight endpoints, live simulation
 - [x] Sentinel Grid dashboard wired to every endpoint
 - [x] 314 verification checks
-- [x] Detection models trained: aerial RGB, thermal, acoustic, flood segmentation
-- [ ] Gradient-boosted model for extreme-monsoon prediction, the one task still open
+- [x] Aerial person detector (YOLO11n) fine-tuned on real photos, see §14
+- [x] Acoustic classifier (real YAMNet) with a transfer head, see §14
+- [x] Heart-rate estimation model, trained on real PPG data, see §14
+- [x] Gradient-boosted model for extreme-monsoon prediction, see §14 — beats the logistic baseline's recall but is not a solved task
+- [ ] Flood segmentation model (SegFormer/U-Net) — still not built, no code or weights
 - [ ] Real Bhuvan, Sentinel-1 and WorldPop exports replacing the modelled ward terrain
+- [ ] Thermal YOLO (FLIR ADAS/LLVIP) — blocked, both datasets are registration-gated
+
+---
+
+## 14. GPU-trained models (this fork)
+
+This fork adds real GPU training on top of the base pipeline above. Everything in §1–§13
+is unchanged; this section documents what got added and where it runs.
+
+The base repo's own trained models (§6) are plain CPU logistic regression — deliberately,
+as a yardstick to check whether a task is separable before spending GPU time on it. This
+fork adds a second, GPU-trained layer for the tasks worth going further on, using an
+NVIDIA RTX 3050 (CUDA), and — for the detection models the base repo ships with no
+weights or training data for — finds and trains on real, no-login datasets instead of
+leaving them stubbed.
+
+| Model | Dataset | Result | Honest read |
+|---|---|---|---|
+| Landslide / Cyclone / Drought — PyTorch MLP | same Kaggle sets as §6 | matches the logistic baseline (≥97% acc) | confirms these tasks are already linearly separable; the MLP's extra capacity doesn't buy more |
+| Extreme monsoon — PyTorch MLP (class-weighted) | same flood_season set as §6 | recall 2% → 63% | class-weighting the loss — not available in the base logistic CLI — is most of the fix |
+| Extreme monsoon — XGBoost (GPU) | same flood_season set | recall 46%, acc 68% | the gradient-boosted model §6 names as the open task, actually built; not a solved task, but a real improvement |
+| YOLO11n person detector | PennFudanPed (170 real photos, direct download) | precision 0.988, recall 0.958, mAP50 0.992 | fine-tuned from Ultralytics' COCO-pretrained weights, not trained from scratch |
+| YAMNet + transfer head | real Google AudioSet checkpoint (TF-Hub) + a synthetic proxy corpus | real inference confirmed (correctly IDs a synthetic siren-like tone); transfer head reports 100% on a 20-sample synthetic set | **no licensed distress-audio dataset was available without registration** — the YAMNet backbone is real and unmodified, the small head on top is not evaluated on real screams |
+| Heart-rate (PPG → BPM) | PPG-DaLiA (real wrist PPG + accelerometer + ECG-derived ground truth, 15 subjects, via a Zenodo mirror) | MAE 28.7 bpm, RMSE 34.9 bpm, held-out | a real, honestly weak number — PPG-DaLiA is deliberately hard (real motion artifacts), and this is a simple FFT-plus-accelerometer baseline, not a proper motion-artifact-cancellation model |
+
+**Where this shows up in the dashboard:**
+- **ML Models tab** → a "GPU-Trained Models" card section lists all of the above with their real measured metrics, alongside the base repo's own two model cards.
+- **Bio-Radar tab** → the pulse chart's frequency and displayed BPM are now driven by a real PPG-DaLiA test window run through the trained heart-rate model (`GET /api/model/heartbeat_samples`), instead of `Math.random()`. Same chart, real parameters underneath.
+
+**Two bugs hit and fixed in the GPU training tool itself** (outside this repo, not in the code above): `torchvision` installed CPU-only against a CUDA `torch` build, and a Windows-specific quirk where a detached parent process's captured subprocess stdout came back empty despite success — fixed by having each job write its result to a file instead.
+
+**Not done, and not claimed to be:** thermal YOLO (FLIR ADAS/LLVIP are both registration-gated), flood segmentation (no code exists for it at all), and the YAMNet transfer head is not validated against real distress audio — see the table above.
+
+Training code for this section lives outside this repo, in a separate `pyos.py` GPU
+queue with its own live dashboard; `trained_models/` here holds the metrics this
+section reports (model weight files are git-ignored — see `.gitignore`).

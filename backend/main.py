@@ -437,6 +437,7 @@ def model_metrics():
         "primary_hazard_model": primary or {"name": "not built", "metrics": {}},
         "secondary_benchmarking_model": secondary or {"name": "not built", "metrics": {}},
         "all_models": cards,
+        "gpu_trained_models": _gpu_trained_models(),
         "spatial_prior": prior,
         "physics_layer": {
             "name": "Deterministic hazard physics",
@@ -455,6 +456,45 @@ def model_metrics():
         "verification": {"formula_audit_checks": 104, "test_checks": 114,
                          "command": "python -m src.audit_math"},
     }
+
+
+# Human-readable labels for the GPU-trained models under trained_models/. These were
+# trained outside this repo (see ibm-hackathon-training/pyos.py) on real downloaded
+# datasets (PennFudanPed, PPG-DaLiA, real YAMNet) plus GPU re-runs of the four
+# CPU baselines above, and copied in here so the dashboard can show them.
+GPU_MODEL_LABELS = {
+    "landslide": "Landslide Susceptibility — PyTorch MLP (CUDA)",
+    "cyclone": "Cyclone Formation — PyTorch MLP (CUDA)",
+    "flood_season": "Extreme Monsoon — PyTorch MLP (CUDA)",
+    "flood_season_xgb": "Extreme Monsoon — XGBoost GBDT (CUDA)",
+    "drought_anomaly": "Drought Anomaly — PyTorch MLP (CUDA)",
+    "heart_rate_ppgdalia": "Heart Rate Estimation — PPG-DaLiA (CUDA)",
+    "yolo_person": "YOLO11n Person Detector — fine-tuned on PennFudanPed (CUDA)",
+    "yamnet_transfer": "YAMNet + Transfer Head — Acoustic Distress (CUDA)",
+}
+
+
+def _gpu_trained_models():
+    """Read the GPU-trained model cards from trained_models/, if present.
+
+    Returns [] rather than raising when the folder is missing, so the rest of the
+    model-metrics endpoint still works on a checkout that never ran the GPU queue.
+    """
+    base = ROOT / "trained_models"
+    if not base.exists():
+        return []
+    out = []
+    for d in sorted(base.iterdir()):
+        mfile = d / "metrics.json"
+        if not d.is_dir() or not mfile.exists():
+            continue
+        try:
+            data = json.loads(mfile.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        out.append({"id": d.name, "name": GPU_MODEL_LABELS.get(d.name, d.name.replace("_", " ").title()),
+                    **data})
+    return out
 
 
 def _honest_read(name, val):
@@ -552,6 +592,28 @@ def radar_heartbeat(cell_id: Optional[str] = None):
         "simulated": True,
         "note": "Simulated. FINDER-class radar is hardware we do not have.",
     }
+
+
+_heartbeat_samples_cache = None
+
+
+@app.get("/api/model/heartbeat_samples")
+def heartbeat_samples():
+    """Real PPG-DaLiA test windows plus the actually trained model's real predictions.
+
+    Not simulated: every waveform, true_bpm and predicted_bpm here came out of
+    extract_heartbeat_samples.py running the real heart_rate_ppgdalia model
+    (trained_models/heart_rate_ppgdalia/) against held-out data. Some predictions
+    are close and some are far off — that is the model's real, measured behaviour
+    (~28.7 bpm MAE), not cherry-picked.
+    """
+    global _heartbeat_samples_cache
+    if _heartbeat_samples_cache is None:
+        path = ROOT / "trained_models" / "heart_rate_ppgdalia" / "sample_windows.json"
+        if not path.exists():
+            return {"samples": [], "note": "no sample_windows.json found"}
+        _heartbeat_samples_cache = json.loads(path.read_text())
+    return _heartbeat_samples_cache
 
 
 @app.get("/api/health")

@@ -1,0 +1,43 @@
+{
+  "model": "pytorch_mlp_32_16",
+  "device": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "train": {
+    "accuracy": 0.9230966310534726,
+    "precision": 0.7319427581951715,
+    "recall": 0.9712135217219068,
+    "f1": 0.834770962909157,
+    "roc_auc": 0.9918469900044029,
+    "brier": 0.04853,
+    "confusion": {
+      "tp": 73550,
+      "fp": 26936,
+      "fn": 2180,
+      "tn": 275939
+    },
+    "n": 378605
+  },
+  "val": {
+    "accuracy": 0.9230964279299744,
+    "precision": 0.7323999840453114,
+    "recall": 0.9698922459328122,
+    "f1": 0.8345794604913301,
+    "roc_auc": 0.9920317258317849,
+    "brier": 0.04826,
+    "confusion": {
+      "tp": 18362,
+      "fp": 6709,
+      "fn": 570,
+      "tn": 69010
+    },
+    "n": 94651
+  },
+  "feature_names": [
+    "soil_moisture",
+    "z_score_in_district",
+    "month",
+    "month_sin",
+    "month_cos"
+  ],
+  "n_train": 378605,
+  "n_val": 94651
+}
