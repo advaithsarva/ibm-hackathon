@@ -7,6 +7,7 @@ Standalone:
     python -m src.hazard.formulas --config configs/disasters/earthquake.yaml --pga_ms2 3.4
 """
 import argparse
+import ast
 import math
 import pathlib
 
@@ -19,6 +20,50 @@ _ALLOWED = {
 }
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+# The node types a hazard formula is allowed to be made of. eval() with an
+# emptied __builtins__ is not a sandbox -- `().__class__.__bases__[0]
+# .__subclasses__()` walks straight back out to anything importable -- and the
+# only thing keeping that unreachable today is that every formula comes from a
+# YAML file in this repo, reached through a fixed dict in backend/main.py. That
+# is one request parameter away from being untrue, so the formula is checked
+# for shape before it is evaluated rather than trusted for its provenance.
+_ALLOWED_NODES = (
+    ast.Expression, ast.Constant, ast.Name, ast.Load,
+    ast.BinOp, ast.UnaryOp, ast.BoolOp, ast.Compare, ast.IfExp, ast.Call,
+    ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow,
+    ast.USub, ast.UAdd, ast.Not, ast.And, ast.Or,
+    ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE,
+)
+
+
+def compile_formula(formula, allowed_names):
+    """Parse a formula and reject anything that is not arithmetic.
+
+    Returns a code object ready for eval(). Raises ValueError on any node type
+    outside _ALLOWED_NODES, any name that is not a declared input or an entry
+    in _ALLOWED, and any call to something other than those entries -- which
+    together rule out attribute access, subscripting, comprehensions, lambdas,
+    imports and walrus assignment.
+    """
+    try:
+        tree = ast.parse(formula, mode="eval")
+    except SyntaxError as exc:
+        raise ValueError(f"formula is not a Python expression: {formula!r} ({exc})")
+
+    for node in ast.walk(tree):
+        if not isinstance(node, _ALLOWED_NODES):
+            raise ValueError(
+                f"{type(node).__name__} is not allowed in a hazard formula: {formula!r}")
+        if isinstance(node, ast.Name) and node.id not in allowed_names:
+            raise ValueError(f"unknown name {node.id!r} in formula {formula!r}")
+        if isinstance(node, ast.Call):
+            if not isinstance(node.func, ast.Name) or node.func.id not in _ALLOWED:
+                raise ValueError(f"only {sorted(_ALLOWED)} may be called: {formula!r}")
+            if node.keywords:
+                raise ValueError(f"keyword arguments are not allowed: {formula!r}")
+
+    return compile(tree, "<hazard formula>", "eval")
 
 
 def load_config(path):
@@ -51,8 +96,9 @@ def hazard_score(cfg, inputs):
 
     env = dict(_ALLOWED)
     env.update({k: inputs[k] for k in required})
+    code = compile_formula(cfg["hazard"]["formula"], set(env))
     try:
-        x = eval(cfg["hazard"]["formula"], {"__builtins__": {}}, env)  # noqa: S307 - formula is repo config
+        x = eval(code, {"__builtins__": {}}, env)  # noqa: S307 - shape-checked above
     except ZeroDivisionError:
         raise ValueError(f"{cfg['name']}: division by zero evaluating {cfg['hazard']['formula']!r}")
 

@@ -8,6 +8,7 @@ re-runs the hazard and zone models instead of replaying a recording.
 """
 import json
 import math
+import os
 import pathlib
 import random
 import time
@@ -28,8 +29,18 @@ ROOT = pathlib.Path(__file__).parent.parent
 FRONTEND = ROOT / "frontend"
 
 app = FastAPI(title="Sentinel Grid", version="2.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
-                   allow_headers=["*"])
+
+# The dashboard is served by this same app (`const API = ''` in frontend/app.js
+# and the StaticFiles mount at the bottom of this file), so every real request
+# is same-origin and needs no CORS at all. allow_origins=["*"] let any page on
+# the internet read the API; these cover the demo machine and nothing else.
+# SENTINEL_ALLOWED_ORIGINS overrides if the dashboard is ever hosted apart.
+ALLOWED_ORIGINS = os.environ.get(
+    "SENTINEL_ALLOWED_ORIGINS",
+    "http://localhost:8000,http://127.0.0.1:8000",
+).split(",")
+app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
+                   allow_methods=["GET"], allow_headers=["*"])
 
 # Which hazard config scores each disaster the dashboard offers. Flood uses the
 # rainfall-only variant because there is no CWC discharge export; see its config header.

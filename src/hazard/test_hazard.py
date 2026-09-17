@@ -188,6 +188,42 @@ def test_engine_output_matches_the_frozen_contract():
     assert len(blue_reasons) == zones.count("BLUE"), "BLUE cells give duplicate reasons"
 
 
+def test_formula_rejects_anything_that_is_not_arithmetic():
+    """eval() with an emptied __builtins__ is not a sandbox.
+
+    Each of these is a real escape from `{"__builtins__": {}}`: attribute
+    access walks the class hierarchy back to every importable module, a
+    subscript reaches into it, and a comprehension or lambda runs a loop. The
+    shape check is what stops them, not the empty globals dict.
+    """
+    from src.hazard.formulas import _ALLOWED, compile_formula
+
+    # The same name set hazard_score() builds: the declared inputs plus the
+    # handful of maths functions a formula may call.
+    names = {"pga"} | set(_ALLOWED)
+
+    escapes = [
+        "().__class__.__bases__[0].__subclasses__()",
+        "pga.__class__",
+        "[x for x in ()]",
+        "(lambda: 1)()",
+        "__import__('os')",
+        "open('/etc/passwd')",
+        "pga := 1",
+    ]
+    for formula in escapes:
+        try:
+            compile_formula(formula, names)
+        except ValueError:
+            continue
+        raise AssertionError(f"formula should have been rejected: {formula!r}")
+
+    # And the arithmetic the seven real configs are made of still compiles.
+    for formula in ("min(1.0, pga / 9.81)", "max(0, 1 - exp(-pga))",
+                    "0.6 * pga + 0.4 * (pga ** 2)", "pga if pga > 0 else 0"):
+        compile_formula(formula, names)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
