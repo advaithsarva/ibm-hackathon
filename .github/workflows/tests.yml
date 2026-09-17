@@ -18,7 +18,14 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
       - run: pip install -r requirements.txt
+      # data/cache/ is gitignored, so a fresh checkout has no feature arrays and
+      # /api/model/metrics returns no model cards -- three contract checks then
+      # fail on a repo where nothing is wrong. This is the documented build step
+      # (README, "python -m src.features --build-all"); it reads only the raw
+      # data committed under data/raw/, so it runs with the network off.
+      - run: python -m src.features --build-all
       - run: python -m src.hazard.test_hazard
       - run: python -m src.detect.test_detect
       - run: python -m src.test_pipeline
       - run: python -m src.test_frontend_contract
+      - run: python -m src.audit_math
